@@ -1,0 +1,226 @@
+/* bootstrap modifications */
+
+.container {
+  max-width: 970px;
+}
+
+.btn-link-inverse {
+  color: #000;
+}
+
+.btn-link-inverse:hover,
+.btn-link-inverse:focus {
+  color: #337ab7;
+}
+
+.panel-heading .panel-title {
+  font-size: 14px;
+}
+
+.panel-heading .btn-xs {
+  margin-top: -3px;
+}
+
+/* custom branding */
+
+.tlr-brand {
+  font-weight: bold;
+  color: #000;
+}
+
+.tlr-brand:hover {
+  color: #337ab7;
+}
+
+.tlr-navbar {
+  font-size: 13px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.tlr-navbar-nav > li > a {
+  padding-left: 10px;
+  padding-right: 10px;
+  font-weight: bold;
+  color: #000;
+}
+
+.tlr-navbar-nav > li > a:hover,
+.tlr-navbar-nav > li > a:focus {
+  background-color: transparent;
+  color: #337ab7;
+}
+
+.tlr-search-form {
+  margin-left: -5px;
+  padding: 0 10px;
+}
+
+@media (max-width: 768px) {
+  .tlr-search-form {
+    margin-left: -10px;
+  }
+}
+
+.tlr-search-input {
+  min-width: 280px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.tlr-navbar-btn-form {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.tlr-footer {
+  margin-top: 40px;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #777;
+  border-top: 1px solid #eee;
+}
+
+/* user listing */
+
+.user-item-icon {
+  padding-right: 5px;
+  color: #999;
+}
+
+/* repo listing */
+
+.repo-item {}
+
+.repo-item-icon {
+  padding: 5px 15px 5px 0;
+  color: #999;
+  float: left;
+}
+
+.repo-item-info {}
+
+.repo-item-heading {}
+
+.repo-item-text {
+  font-size: 12px;
+  color: #999;
+}
+
+/* repo view */
+
+.repo-head {
+  margin-bottom: 15px;
+}
+
+.repo-head .repo-icon {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  color: #bbb;
+}
+
+.repo-head .repo-title {
+  position: relative;
+  margin-top: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 20px;
+  margin-bottom: 10px;
+  padding-left: 35px;
+  font-size: 21px;
+  font-weight: normal;
+  color: #777;
+}
+
+.repo-head .repo-title-username {}
+
+.repo-head .path-divider {
+  margin: 0 0.25em;
+}
+
+.repo-head .repo-title-reponame {
+  font-weight: bold;
+}
+
+.repo-head .repo-description {
+  margin-bottom: 15px;
+}
+
+/* tree listing */
+
+.tree-listing {
+  font-size: 13px;
+}
+
+/* file viewer */
+
+.file-viewer pre code {
+  word-wrap: normal;
+  white-space: pre;
+  overflow: auto;
+}
+
+/* commit listing */
+
+.commits-listing {
+  margin-top: 40px;
+  margin-bottom: 30px;
+  padding-top: 18px;
+  position: relative;
+  padding-left: 40px;
+}
+
+.commits-listing:before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 12px;
+  z-index: -1;
+  display: block;
+  width: 2px;
+  content: "";
+  background-color: #f3f3f3;
+}
+
+.commit-item {}
+
+.commit-point {
+  margin-left: -34px;
+  line-height: 16px;
+  background-color: #fff;
+  color: #ccc;
+}
+
+.commit-group {
+  background: #fff;
+  margin-top: -34px;
+  margin-bottom: 34px;
+  padding: 8px 10px;
+  border: 1px solid #e5e5e5;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.commit-actions {
+  margin-top: 2px;
+}
+
+.commit-info {
+  color: #999;
+}
+
+.commit-title {
+  margin-top: 0;
+  margin-bottom: 5px;
+  color: #000;
+}
+
+.commit-add {
+  color: #6cc644;
+}
+
+.commit-del {
+  color: #bd2c00;
+}

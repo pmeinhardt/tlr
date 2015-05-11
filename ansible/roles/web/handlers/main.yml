@@ -1,0 +1,5 @@
+---
+# Handlers for notifications
+
+- name: reload nginx
+  service: name=nginx state=reloaded

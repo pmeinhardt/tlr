@@ -1,0 +1,18 @@
+---
+# Top-level Ansible playbook, maps configuration of the host groups
+# to the roles (services) that you want the group's host(s) to run.
+
+- hosts: all
+  sudo: yes
+  roles:
+    - common
+
+- hosts: web
+  sudo: yes
+  roles:
+    - web
+
+- hosts: db
+  sudo: yes
+  roles:
+    - db

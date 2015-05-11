@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% try %}{{ escape(title) }}{% except NameError %}tailr{% end %}</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://oss.maxcdn.com/octicons/2.2.2/octicons.css">
+  <link rel="stylesheet" href="{{ static_url("stylesheets/base.css") }}">
+  {% block stylesheets %}{% end %}
+</head>
+<body>
+  <a href="#content" tabindex="1" class="sr-only">Skip to content</a>
+  <header class="navbar navbar-static-top tlr-navbar" id="top" role="banner">
+    <div class="container">
+      <div class="navbar-header hidden-xs">
+        <a href="/" class="navbar-brand tlr-brand">TLR</a>
+      </div>
+      {#
+      <form class="navbar-form navbar-left tlr-search-form" action="{{ reverse_url("search") }}" method="get">
+        <input type="text" class="form-control input-sm tlr-search-input" name="q" tabindex="1" placeholder="Search">
+      </form>
+      #}
+      <nav>
+        <ul class="nav navbar-nav tlr-navbar-nav hidden-xs">
+          <li>
+            <a href="/explore">Explore</a>
+          </li>
+          <li>
+            <a href="/stats">Statistics</a>
+          </li>
+          <li>
+            <a href="/help">Help</a>
+          </li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right tlr-navbar-nav hidden-xs">
+          {% if current_user %}
+          <li>
+            {#
+            <a href="{{ reverse_url("user", current_user.name) }}">{{ current_user.name }}</a>
+            #}
+          </li>
+          <li>
+            {#
+            <a href="{{ reverse_url("new-repo") }}" class="btn btn-link btn-link-inverse"><span class="octicon octicon-plus"></span></a>
+            #}
+          </li>
+          <li>
+            {#
+            <a href="{{ reverse_url("settings") }}" class="btn btn-link btn-link-inverse"><span class="octicon octicon-gear"></span></a>
+            #}
+          </li>
+          <li>
+            {#
+            <form class="navbar-form tlr-navbar-btn-form" action="{{ reverse_url("deauth") }}" method="post">
+              {% module xsrf_form_html() %}
+              <button type="submit" class="btn btn-link btn-link-inverse"><span class="octicon octicon-sign-out"></span></button>
+            </form>
+            #}
+          </li>
+          {% else %}
+          {#
+          <li><a href="{{ reverse_url("join") }}">Sign up</a></li>
+          <li><a href="{{ reverse_url("auth") }}">Sign in</a></li>
+          #}
+          {% end %}
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container" id="content">
+    {% block content %}{% end %}
+  </div>
+
+  <div class="container">
+    <footer class="tlr-footer" role="contentinfo">
+      - GitHub -
+    </footer>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+  <script src="https://oss.maxcdn.com/keymaster.js/1.6.1/keymaster.min.js"></script>
+  {% block scripts %}{% end %}
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Vagrant directory
+.vagrant/
+
+# Application config
+.env
+
+# Virtualenv
+venv/
+
+# Python
+*.py[cod]

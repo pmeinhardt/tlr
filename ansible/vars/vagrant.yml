@@ -1,0 +1,15 @@
+---
+# Configuration variables (load as extra vars)
+
+proxy:
+  name: localhost     # external server name, e.g. "tailr.io"
+
+app:
+  baseport: 5000      # app base port for tornado server instances
+  concurr: 1          # number of concurrent tornado servers
+  root: /vagrant      # root directory of the app
+
+db:
+  name: tailr         # database name,
+  user: tailr         # database user
+  pass: tailr         # and password
