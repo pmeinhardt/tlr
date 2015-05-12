@@ -1,4 +1,4 @@
-from peewee import MySQLDatabase, Field, IntegerField, SQL
+from peewee import MySQLDatabase, Field, DateTimeField, IntegerField, SQL
 
 class MSQLBinaryField(Field):
     db_field = "binary"
@@ -52,7 +52,7 @@ class MSQLMediumIntegerField(MSQLIntegerField):
 class MSQLBigIntegerField(MSQLIntegerField):
     db_field = "bigint"
 
-class MSQLTimestampField(Field):
+class MSQLTimestampField(DateTimeField):
     db_field = "timestamp"
 
     def __init__(self, precision=0, *args, **kwargs):

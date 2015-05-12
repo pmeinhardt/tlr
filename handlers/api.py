@@ -6,7 +6,10 @@ import time
 import zlib
 
 from tornado.web import HTTPError, RequestHandler
-from peewee import IntegrityError
+from peewee import IntegrityError, SQL
+from rdflib.plugins.serializers.nt import _xmlcharref_encode as _xml
+from rdflib.plugins.serializers.nt import _quoteLiteral as _quote
+import rdflib
 
 from models import User, Token, Repo, HMap, CSet, Blob
 
@@ -19,18 +22,29 @@ def authenticated(method):
         return method(self, *args, **kwargs)
     return wrapper
 
-def shasum(s):
-    return hashlib.sha1(s).digest()
+# Query string date format, e.g. `...?datetime=2015/05/11-16:56:21`
+QSDATEFMT = "%Y/%m/%d-%H:%M:%S"
+
+def date(s, fmt):
+    return datetime.datetime.strptime(s, fmt)
+
+def now():
+    return datetime.datetime.utcnow()
 
 # This factor determines whether a snapshot is stored rather than a delta,
 # depending on the accumulated size of the latest snapshot and subsequent
-# deltas. I.e. for the latest snapshot `snap`, deltas `d1`, `d2`, ...,
-# `dcur` and a new state `cur`, a new snapshot is stored if:
+# deltas. I.e. for the latest snapshot `snap`, deltas `d1`, `d2`, ...
+# and a new state `cur`, a new snapshot is stored if:
 #
-# `SNAPF * len(cur) <= len(snap) + len(d1) + len(d2) + ... + len(dcur)`
+# `SNAPF * len(cur) <= len(snap) + len(d1) + len(d2) + ...`
 #
 # So, larger values will result in longer delta chains and likely reduce
 # storage size at the expense of higher revision reconstruction costs.
+#
+# Note that this calculation does not take into acccount the size of the delta
+# between the last known state and the current value. Calculating this would
+# require reconstructing the last known version (reading blobs)
+# whereas without, we can simply sum the length values.
 SNAPF = 1.0
 
 # TODO: Tune zlib compression parameters `level`, `wbits`, `bufsize`?
@@ -40,6 +54,45 @@ def compress(s):
 
 def decompress(s):
     return zlib.decompress(s)
+
+def shasum(s):
+    return hashlib.sha1(s).digest()
+
+def parse(s, fmt):
+    stmts = set()
+
+    ds = rdflib.graph.Dataset()
+    dc = ds.parse(data=s, format=fmt)
+
+    for ctx in ds.contexts():
+        if ctx.identifier == dc.identifier:
+            for s, p, o in ctx:
+                stmts.add(nt((s, p, o)))
+        else:
+            c = dc.identifier
+            for s, p, o in ctx:
+                stmts.add(nq((s, p, o, c)))
+
+    return stmts
+
+def nt(triple):
+    if isinstance(triple[2], rdflib.term.Literal):
+        return u"%s %s %s ." % (triple[0].n3(), triple[1].n3(),
+            _xml(_quote(triple[2])))
+    else:
+        return u"%s %s %s ." % (triple[0].n3(), triple[1].n3(),
+            _xml(triple[2].n3()))
+
+def nq(quad):
+    if isinstance(quad[2], rdflib.term.Literal):
+        return u"%s %s %s %s ." % (quad[0].n3(), quad[1].n3(),
+            _xml(_quote(quad[2])), quad[3].n3())
+    else:
+        return u"%s %s %s %s ." % (quad[0].n3(), quad[1].n3(),
+            _xml(quad[2].n3()), quad[3].n3())
+
+def join(parts, sep):
+    return string.joinfields(parts, sep)
 
 class BaseHandler(RequestHandler):
     """Base class for all web API handlers."""
@@ -56,6 +109,9 @@ class BaseHandler(RequestHandler):
         except (KeyError, ValueError, User.DoesNotExist):
             return None
 
+    def check_xsrf_cookie(self):
+        pass
+
 class RepoHandler(BaseHandler):
     """Processes repository calls: Push, timegate, memento, timemap etc."""
 
@@ -63,14 +119,15 @@ class RepoHandler(BaseHandler):
     #     pass
 
     def get(self, username, reponame):
-        timemap = self.get_query_argument("timemap") == "true"
-        index = self.get_query_argument("index") == "true"
+        timemap = self.get_query_argument("timemap", "false") == "true"
+        index = self.get_query_argument("index", "false") == "true"
         key = self.get_query_argument("key")
 
         if (index and timemap) or (index and key) or (timemap and not key):
             raise HTTPError(400)
 
-        ts = float(self.get_query_argument("timestamp")) or time.time()
+        datestr = self.get_query_argument("datetime", None)
+        ts = datestr and date(datestr, QSDATEFMT) or now()
 
         try:
             repo = (Repo
@@ -84,8 +141,8 @@ class RepoHandler(BaseHandler):
 
         if key and not timemap:
             # Recreate the resource for the given key in its latest state -
-            # if no `timestamp` was provided - or in the state it was in at
-            # the time indicated by the passed `timestamp` argument.
+            # if no `datetime` was provided - or in the state it was in at
+            # the time indicated by the passed `datetime` argument.
 
             sha = shasum(key)
 
@@ -100,12 +157,12 @@ class RepoHandler(BaseHandler):
                     (CSet.hkey == sha) &
                     (CSet.time <= ts) &
                     (CSet.time >= SQL(
-                        "COALESCE((SELECT time FROM cset"
-                        "WHERE repo_id = %s"
-                        "AND hkey_id = %s"
-                        "AND time <= %s"
-                        "AND type != %s"
-                        "ORDER BY time DESC"
+                        "COALESCE((SELECT time FROM cset "
+                        "WHERE repo_id = %s "
+                        "AND hkey_id = %s "
+                        "AND time <= %s "
+                        "AND type != %s "
+                        "ORDER BY time DESC "
                         "LIMIT 1), 0)",
                         repo.id, sha, ts, CSet.DELTA
                     )))
@@ -131,19 +188,29 @@ class RepoHandler(BaseHandler):
                 .order_by(Blob.time)
                 .naive())
 
-            quads = set()
+            if len(chain) == 1:
+                # Special case, where we can simply return
+                # the blob data of the snapshot.
+                snap = blobs.first().data
+                return self.finish(snap)
 
-            for i, blob in enumerate(blob.iterator()):
+            stmts = set()
+
+            for i, blob in enumerate(blobs.iterator()):
                 data = decompress(blob.data)
 
                 if i == 0:
-                    quads.update(???(data))
+                    # Base snapshot for the delta chain
+                    stmts.update(data.splitlines())
                 else:
-                    upd(quads, data)
-                    # quads.discard(deletion)
-                    # quads.add(addition)
+                    for line in data.splitlines():
+                        mode, stmt = line[0], line[2:]
+                        if mode == "A":
+                            stmts.add(stmt)
+                        else:
+                            stmts.discard(stmt)
 
-            self.write(???(quads))
+            self.write(join(stmts, "\n"))
         elif key and timemap:
             # Generate a timemap containing historic change information
             # for the requested key.
@@ -174,7 +241,8 @@ class RepoHandler(BaseHandler):
     def put(self, username, reponame):
         # Create a new revision of the resource specified by `key`.
 
-        key = self.get_query_argument("key")
+        fmt = self.request.headers["Content-Type"]
+        key = self.get_query_argument("key", None)
 
         if username != self.current_user.name:
             raise HTTPError(403)
@@ -182,7 +250,8 @@ class RepoHandler(BaseHandler):
         if not key:
             raise HTTPError(400)
 
-        ts = float(self.get_query_argument("timestamp")) or time.time()
+        datestr = self.get_query_argument("datetime", None)
+        ts = datestr and date(datestr, QSDATEFMT) or now()
 
         try:
             repo = (Repo
@@ -202,18 +271,18 @@ class RepoHandler(BaseHandler):
                 (CSet.repo == repo) &
                 (CSet.hkey == sha) &
                 (CSet.time >= SQL(
-                    "COALESCE((SELECT time FROM cset"
-                    "WHERE repo_id = %s"
-                    "AND hkey_id = %s"
-                    "AND type != %s"
-                    "ORDER BY time DESC"
+                    "COALESCE((SELECT time FROM cset "
+                    "WHERE repo_id = %s "
+                    "AND hkey_id = %s "
+                    "AND type != %s "
+                    "ORDER BY time DESC "
                     "LIMIT 1), 0)",
                     repo.id, sha, CSet.DELTA
                 )))
             .order_by(CSet.time)
             .naive())
 
-        if len(chain) > 0 and ts < chain[-1].time:
+        if len(chain) > 0 and not ts > chain[-1].time:
             # Appended timestamps must be monotonically increasing!
             raise HTTPError(400)
 
@@ -224,24 +293,57 @@ class RepoHandler(BaseHandler):
             try:
                 HMap.create(sha=sha, val=key)
             except IntegrityError:
-                val = HMap.select(HMap.val).where(sha=sha).scalar()
+                val = HMap.select(HMap.val).where(HMap.sha == sha).scalar()
                 if val != key:
                     raise HTTPError(500)
 
-        # Parse and normalize (N-Quads)
-        cur = ???(???(self.request.body))
+        # Parse and normalize into a set of N-Quad lines
+        stmts = parse(self.request.body, fmt)
 
         acclen = reduce(lambda s, e: s + e.len, chain, 0)
-        snapc = compress(cur)
+        snapc = compress(join(stmts, "\n"))
 
-        if (len(chain) == 0 or
-            chain[0].type == CSet.DELETE or
+        if (len(chain) == 0 or chain[0].type == CSet.DELETE or
             SNAPF * len(snapc) <= acclen):
-            # Store a snapshot of the current state
-            pass
+            # Store the current state as a new snapshot
+            Blob.create(repo=repo, hkey=sha, time=ts, data=snapc)
+            CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.SNAPSHOT,
+                len=len(snapc))
         else:
             # Store a directed delta between the previous and current state
-            pass
+
+            prev = set()
+
+            blobs = (Blob
+                .select(Blob.data)
+                .where(
+                    (Blob.repo == repo) &
+                    (Blob.hkey == sha) &
+                    (Blob.time << map(lambda e: e.time, chain)))
+                .order_by(Blob.time)
+                .naive())
+
+            for i, blob in enumerate(blobs):
+                data = decompress(blob.data)
+
+                if i == 0:
+                    # Base snapshot for the delta chain
+                    prev.update(data.splitlines())
+                else:
+                    for line in data.splitlines():
+                        mode, stmt = line[0], line[2:]
+                        if mode == "A":
+                            prev.add(stmt)
+                        else:
+                            prev.discard(stmt)
+
+            patch = compress(join(
+                map(lambda s: "D " + s, prev - stmts) +
+                map(lambda s: "A " + s, stmts - prev), "\n"))
+
+            Blob.create(repo=repo, hkey=sha, time=ts, data=patch)
+            CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.DELTA,
+                len=len(patch))
 
     @authenticated
     def delete(self, username, reponame):
@@ -256,7 +358,8 @@ class RepoHandler(BaseHandler):
         if not key:
             raise HTTPError(400)
 
-        ts = float(self.get_query_argument("timestamp")) or time.time()
+        datestr = self.get_query_argument("datetime", None)
+        ts = datestr and date(datestr, QSDATEFMT) or now()
 
         try:
             repo = (Repo
@@ -270,4 +373,22 @@ class RepoHandler(BaseHandler):
 
         sha = shasum(key)
 
-        last = CSet.select(CSet.type)
+        try:
+            last = (CSet
+                .select(CSet.type)
+                .where((CSet.repo == repo) & (CSet.hkey == sha))
+                .order_by(CSet.time.desc())
+                .limit(1)
+                .naive()
+                .get())
+        except CSet.DoesNotExist:
+            # No changeset was found for the given key -
+            # the resource does not exist.
+            raise HTTPError(400)
+
+        if last.type == CSet.DELETE:
+            # The resource was deleted already, return instantly.
+            return self.finish()
+
+        # Insert the new "delete" change.
+        CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.DELETE, len=0)

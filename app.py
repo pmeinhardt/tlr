@@ -27,5 +27,5 @@ if __name__ == "__main__":
     app = Application(dbconf, bsconf, routes, **settings)
     models.initialize(app.database, app.blobstore)
     server = tornado.httpserver.HTTPServer(app)
-    server.listen(tornado.options.port)
+    server.listen(tornado.options.options.port)
     tornado.ioloop.IOLoop.instance().start()
