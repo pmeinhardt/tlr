@@ -22,8 +22,8 @@ def authenticated(method):
         return method(self, *args, **kwargs)
     return wrapper
 
-# Query string date format, e.g. `...?datetime=2015/05/11-16:56:21`
-QSDATEFMT = "%Y/%m/%d-%H:%M:%S"
+# Query string date format, e.g. `...?datetime=2015-05-11-16:56:21`
+QSDATEFMT = "%Y-%m-%d-%H:%M:%S"
 
 def date(s, fmt):
     return datetime.datetime.strptime(s, fmt)
@@ -33,18 +33,13 @@ def now():
 
 # This factor determines whether a snapshot is stored rather than a delta,
 # depending on the accumulated size of the latest snapshot and subsequent
-# deltas. I.e. for the latest snapshot `snap`, deltas `d1`, `d2`, ...
-# and a new state `cur`, a new snapshot is stored if:
+# deltas. I.e. for the latest snapshot `snap`, deltas `d1`, `d2`, ...,
+# `dcur` and a new state `cur`, a new snapshot is stored if:
 #
-# `SNAPF * len(cur) <= len(snap) + len(d1) + len(d2) + ...`
+# `SNAPF * len(cur) <= len(snap) + len(d1) + len(d2) + ... + len(dcur)`
 #
 # So, larger values will result in longer delta chains and likely reduce
 # storage size at the expense of higher revision reconstruction costs.
-#
-# Note that this calculation does not take into acccount the size of the delta
-# between the last known state and the current value. Calculating this would
-# require reconstructing the last known version (reading blobs)
-# whereas without, we can simply sum the length values.
 SNAPF = 1.0
 
 # TODO: Tune zlib compression parameters `level`, `wbits`, `bufsize`?
@@ -192,7 +187,7 @@ class RepoHandler(BaseHandler):
                 # Special case, where we can simply return
                 # the blob data of the snapshot.
                 snap = blobs.first().data
-                return self.finish(snap)
+                return self.finish(decompress(snap))
 
             stmts = set()
 
@@ -299,19 +294,10 @@ class RepoHandler(BaseHandler):
 
         # Parse and normalize into a set of N-Quad lines
         stmts = parse(self.request.body, fmt)
-
-        acclen = reduce(lambda s, e: s + e.len, chain, 0)
         snapc = compress(join(stmts, "\n"))
 
-        if (len(chain) == 0 or chain[0].type == CSet.DELETE or
-            SNAPF * len(snapc) <= acclen):
-            # Store the current state as a new snapshot
-            Blob.create(repo=repo, hkey=sha, time=ts, data=snapc)
-            CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.SNAPSHOT,
-                len=len(snapc))
-        else:
-            # Store a directed delta between the previous and current state
-
+        if len(chain) > 0:
+            # Reconstruct the previous state of the resource
             prev = set()
 
             blobs = (Blob
@@ -323,7 +309,7 @@ class RepoHandler(BaseHandler):
                 .order_by(Blob.time)
                 .naive())
 
-            for i, blob in enumerate(blobs):
+            for i, blob in enumerate(blobs.iterator()):
                 data = decompress(blob.data)
 
                 if i == 0:
@@ -340,7 +326,23 @@ class RepoHandler(BaseHandler):
             patch = compress(join(
                 map(lambda s: "D " + s, prev - stmts) +
                 map(lambda s: "A " + s, stmts - prev), "\n"))
+        else:
+            # Provide dummy value for `patch`. If chain length is 0,
+            # we always store a snapshot.
+            patch = ""
 
+        # Calculate the accumulated size of the delta chain including
+        # the (potential) patch from the previous to the pushed state.
+        acclen = reduce(lambda s, e: s + e.len, chain, 0) + len(patch)
+
+        if (len(chain) == 0 or chain[0].type == CSet.DELETE or
+            SNAPF * len(snapc) <= acclen):
+            # Store the current state as a new snapshot
+            Blob.create(repo=repo, hkey=sha, time=ts, data=snapc)
+            CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.SNAPSHOT,
+                len=len(snapc))
+        else:
+            # Store a directed delta between the previous and current state
             Blob.create(repo=repo, hkey=sha, time=ts, data=patch)
             CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.DELTA,
                 len=len(patch))
