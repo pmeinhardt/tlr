@@ -323,6 +323,8 @@ class RepoHandler(BaseHandler):
                         else:
                             prev.discard(stmt)
 
+            # TODO: Check stmts != prev (actual change)
+
             patch = compress(join(
                 map(lambda s: "D " + s, prev - stmts) +
                 map(lambda s: "A " + s, stmts - prev), "\n"))
