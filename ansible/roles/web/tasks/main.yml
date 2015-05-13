@@ -39,6 +39,11 @@
 - name: ensure virtualenv is installed
   pip: name=virtualenv
 
+# Dependencies
+
+- name: ensure python-librdf is installed
+  apt: pkg=python-librdf state=present
+
 # Application setup
 
 - name: ensure project python packages are installed

@@ -7,9 +7,7 @@ import zlib
 
 from tornado.web import HTTPError, RequestHandler
 from peewee import IntegrityError, SQL
-from rdflib.plugins.serializers.nt import _xmlcharref_encode as _xml
-from rdflib.plugins.serializers.nt import _quoteLiteral as _quote
-import rdflib
+import RDF
 
 from models import User, Token, Repo, HMap, CSet, Blob
 
@@ -55,36 +53,10 @@ def shasum(s):
 
 def parse(s, fmt):
     stmts = set()
-
-    ds = rdflib.graph.Dataset()
-    dc = ds.parse(data=s, format=fmt)
-
-    for ctx in ds.contexts():
-        if ctx.identifier == dc.identifier:
-            for s, p, o in ctx:
-                stmts.add(nt((s, p, o)))
-        else:
-            c = dc.identifier
-            for s, p, o in ctx:
-                stmts.add(nq((s, p, o, c)))
-
+    parser = RDF.Parser(name="ntriples")
+    for st in parser.parse_string_as_stream(s, "urn:x-default:tailr"):
+        stmts.add(str(st) + " .")
     return stmts
-
-def nt(triple):
-    if isinstance(triple[2], rdflib.term.Literal):
-        return u"%s %s %s ." % (triple[0].n3(), triple[1].n3(),
-            _xml(_quote(triple[2])))
-    else:
-        return u"%s %s %s ." % (triple[0].n3(), triple[1].n3(),
-            _xml(triple[2].n3()))
-
-def nq(quad):
-    if isinstance(quad[2], rdflib.term.Literal):
-        return u"%s %s %s %s ." % (quad[0].n3(), quad[1].n3(),
-            _xml(_quote(quad[2])), quad[3].n3())
-    else:
-        return u"%s %s %s %s ." % (quad[0].n3(), quad[1].n3(),
-            _xml(quad[2].n3()), quad[3].n3())
 
 def join(parts, sep):
     return string.joinfields(parts, sep)
