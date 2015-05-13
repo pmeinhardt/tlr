@@ -29,16 +29,18 @@ def date(s, fmt):
 def now():
     return datetime.datetime.utcnow()
 
-# This factor determines whether a snapshot is stored rather than a delta,
-# depending on the accumulated size of the latest snapshot and subsequent
-# deltas. I.e. for the latest snapshot `snap`, deltas `d1`, `d2`, ...,
-# `dcur` and a new state `cur`, a new snapshot is stored if:
+# This factor (among others) determines whether a snapshot is stored rather
+# than a delta, depending on the size of the latest snapshot and subsequent
+# deltas. For the latest snapshot `base` and deltas `d1`, `d2`, ..., `dn`
+# a new snapshot is definitely stored if:
 #
-# `SNAPF * len(cur) <= len(snap) + len(d1) + len(d2) + ... + len(dcur)`
+# `SNAPF * len(base) <= len(d1) + len(d2) + ... + len(dn)`
 #
-# So, larger values will result in longer delta chains and likely reduce
+# In short, larger values will result in longer delta chains and likely reduce
 # storage size at the expense of higher revision reconstruction costs.
-SNAPF = 1.0
+#
+# TODO: Empirically determine a good value with real data/statistics.
+SNAPF = 10.0
 
 # TODO: Tune zlib compression parameters `level`, `wbits`, `bufsize`?
 
@@ -268,7 +270,11 @@ class RepoHandler(BaseHandler):
         stmts = parse(self.request.body, fmt)
         snapc = compress(join(stmts, "\n"))
 
-        if len(chain) > 0:
+        if len(chain) == 0 or chain[0].type == CSet.DELETE:
+            # Provide dummy value for `patch` which is never stored.
+            # If we get here, we always store a snapshot later on!
+            patch = ""
+        else:
             # Reconstruct the previous state of the resource
             prev = set()
 
@@ -295,22 +301,20 @@ class RepoHandler(BaseHandler):
                         else:
                             prev.discard(stmt)
 
-            # TODO: Check stmts != prev (actual change)
+            # TODO: Check stmts != prev (actual change or bail out)
 
             patch = compress(join(
                 map(lambda s: "D " + s, prev - stmts) +
                 map(lambda s: "A " + s, stmts - prev), "\n"))
-        else:
-            # Provide dummy value for `patch`. If chain length is 0,
-            # we always store a snapshot.
-            patch = ""
 
         # Calculate the accumulated size of the delta chain including
         # the (potential) patch from the previous to the pushed state.
-        acclen = reduce(lambda s, e: s + e.len, chain, 0) + len(patch)
+        acclen = reduce(lambda s, e: s + e.len, chain[1:], 0) + len(patch)
+
+        blen = len(chain) > 0 and chain[0].len or 0 # base length
 
         if (len(chain) == 0 or chain[0].type == CSet.DELETE or
-            SNAPF * len(snapc) <= acclen):
+            len(snapc) <= len(patch) or SNAPF * blen <= acclen):
             # Store the current state as a new snapshot
             Blob.create(repo=repo, hkey=sha, time=ts, data=snapc)
             CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.SNAPSHOT,
