@@ -113,7 +113,7 @@ class RepoHandler(BaseHandler):
             # if no `datetime` was provided - or in the state it was in at
             # the time indicated by the passed `datetime` argument.
 
-            sha = shasum(key)
+            sha = shasum(key.encode("utf-8"))
 
             # Fetch all relevant changes from the last "non-delta" onwards,
             # ordered by time. The returned delta-chain consists of either:
@@ -184,7 +184,7 @@ class RepoHandler(BaseHandler):
             # Generate a timemap containing historic change information
             # for the requested key.
 
-            sha = shasum(key)
+            sha = shasum(key.encode("utf-8"))
 
             # TODO: Gen. timemap by selecting timestamps from csets for resource
             # TODO: Paginate?
@@ -232,7 +232,7 @@ class RepoHandler(BaseHandler):
         except Repo.DoesNotExist:
             raise HTTPError(404)
 
-        sha = shasum(key)
+        sha = shasum(key.encode("utf-8"))
 
         chain = list(CSet
             .select(CSet.time, CSet.type, CSet.len)
@@ -351,7 +351,7 @@ class RepoHandler(BaseHandler):
         except Repo.DoesNotExist:
             raise HTTPError(404)
 
-        sha = shasum(key)
+        sha = shasum(key.encode("utf-8"))
 
         try:
             last = (CSet
