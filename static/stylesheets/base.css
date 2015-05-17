@@ -128,7 +128,7 @@ body {
   width: 100%;
 }
 
-.tlr-tease p {
+.tlr-tease .stats {
   margin-top: 40px;
   font-size: 16px;
 }
