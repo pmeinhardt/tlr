@@ -1,0 +1,27 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-6 col-sm-offset-3">
+    <div class="panel panel-primary">
+      <div class="panel-heading">
+        <h3 class="panel-title">Sign in</h3>
+      </div>
+      <div class="panel-body">
+        <form action="{{ request.uri }}" method="post">
+          {% module xsrf_form_html() %}
+          <div class="form-group">
+            <label for="auth-username-input">Username</label>
+            <input type="text" class="form-control" id="auth-username-input" name="username" autofocus>
+          </div>
+          <div class="form-group">
+            <label for="auth-password-input">Password</label>
+            <input type="password" class="form-control" id="auth-password-input" name="password">
+          </div>
+          <input type="submit" class="btn btn-default" value="Sign in">
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% end %}

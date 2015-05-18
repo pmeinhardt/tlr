@@ -50,6 +50,11 @@ body {
   color: #ccc;
 }
 
+.panel {
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
 /* custom branding */
 
 .tlr-navbar {
@@ -70,8 +75,19 @@ body {
   height: auto;
 }
 
+.tlr-navbar .navbar-toggle {
+  border: 0;
+  margin: 0;
+  padding: 10px 15px;
+  color: #337ab7;
+}
+
 .tlr-brand .octicon {
   font-size: 22px;
+}
+
+.tlr-navbar .octicon.dropdown-chevron {
+  font-size: 14px;
 }
 
 .tlr-navbar-btn-form {

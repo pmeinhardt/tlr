@@ -1,0 +1,27 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
+    <form action="{{ reverse_url("web:create-repo") }}" method="post">
+      {% module xsrf_form_html() %}
+      <div class="form-group">
+        <label for="repo-name-input">Repository name</label>
+        <div class="input-group">
+          <div class="input-group-addon">{{ user.name }} /</div>
+          <input type="text" class="form-control" id="repo-name-input" name="reponame" autofocus>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="repo-description-input">Description (optional)</label>
+        <input type="text" class="form-control" id="repo-description-input" name="description">
+        <span class="help-block">You can provide a short description for your repository here.</span>
+      </div>
+      <hr>
+      <div class="form-group">
+        <button type="submit" class="btn btn-success">Create repository</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% end %}

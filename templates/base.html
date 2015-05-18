@@ -16,10 +16,14 @@
   <header class="navbar navbar-static-top tlr-navbar" id="top" role="banner">
     <div class="container">
       <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="octicon octicon-three-bars"></span>
+        </button>
         <a href="/" class="navbar-brand tlr-brand"><span class="octicon octicon-primitive-dot"></span></a>
       </div>
-      <nav>
-        <ul class="nav navbar-nav tlr-navbar-nav hidden-xs">
+      <nav class="collapse navbar-collapse" id="navbar-collapse">
+        <ul class="nav navbar-nav tlr-navbar-nav">
           <li>
             <a href="/explore">Explore</a>
           </li>
@@ -33,31 +37,24 @@
         <ul class="nav navbar-nav navbar-right tlr-navbar-nav">
           {% if current_user %}
           <li>
-            {#
-            <a href="{{ reverse_url("user", current_user.name) }}">{{ current_user.name }}</a>
-            #}
+            <a href="#"><span class="octicon octicon-gear"></span> <span class="octicon octicon-chevron-down dropdown-chevron"></span></a>
+            <!-- <a href="{#{{ reverse_url("web:user", current_user.name) }}#}"><span class="hidden">{{ current_user.name }}</span></a> -->
+          </li>
+          <!-- <li>
+            <a href="{#{{ reverse_url("web:settings") }}#}" class="btn btn-link"><span class="octicon octicon-gear"></span></a>
+          </li> -->
+          <li>
+            <a href="{{ reverse_url("web:create-repo") }}" class="btn btn-default">Create Repo</a>
           </li>
           <li>
-            <a href="" class="btn btn-link btn-link-inverse"><span class="octicon octicon-plus"></span></a>
-            {#
-            <a href="{{ reverse_url("new-repo") }}" class="btn btn-link btn-link-inverse"><span class="octicon octicon-plus"></span></a>
-            #}
-          </li>
-          <li>
-            <a href="" class="btn btn-link btn-link-inverse"><span class="octicon octicon-gear"></span></a>
-            {#
-            <a href="{{ reverse_url("settings") }}" class="btn btn-link btn-link-inverse"><span class="octicon octicon-gear"></span></a>
-            #}
-          </li>
-          <li>
-            <form class="navbar-form tlr-navbar-btn-form" action="{#{{ reverse_url("deauth") }}#}" method="post">
+            <form class="navbar-form tlr-navbar-btn-form" action="{{ reverse_url("web:deauth") }}" method="post">
               {% module xsrf_form_html() %}
-              <button type="submit" class="btn btn-link"><span class="octicon octicon-sign-out"></span></button>
+              <!-- <button type="submit" class="btn btn-link"><span class="octicon octicon-sign-out"></span></button> -->
             </form>
           </li>
           {% else %}
-          <li><a href="{#{{ reverse_url("auth") }}#}">Sign in</a></li>
-          <li><a class="btn btn-default" href="{#{{ reverse_url("join") }}#}">Sign up</a></li>
+          <li><a href="{{ reverse_url("web:auth") }}">Sign in</a></li>
+          <li><a class="btn btn-default" href="{#{{ reverse_url("web:join") }}#}">Sign up</a></li>
           {% end %}
         </ul>
       </nav>

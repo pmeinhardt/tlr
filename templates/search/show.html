@@ -1,0 +1,61 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-3">
+    <h2>Search</h2>
+  </div>
+  <div class="col-sm-9">
+    <form action="{{ reverse_url("web:search") }}" method="get">
+      <div class="form-group">
+        <input type="text" class="form-control" id="refine-search-input" name="q" value="{{ query }}" placeholder="Search" autofocus>
+      </div>
+    </form>
+
+    {% if repos %}
+    <div class="panel panel-default repo-listing">
+      <div class="panel-heading">
+        <h3 class="panel-title">Repositories</h3>
+      </div>
+      <div class="list-group">
+        {% for repo in repos %}
+        <a href="{{ reverse_url("web:repo", repo.user.name, repo.name) }}" class="list-group-item repo-item">
+          <div class="repo-item-icon">
+            <span class="mega-octicon octicon-repo"></span>
+          </div>
+          <div class="repo-item-info">
+            <h4 class="list-group-item-heading repo-item-heading">{{ repo.name }}</h4>
+            <p class="list-group-item-text repo-item-text">{{ repo.user.name }}</p>
+          </div>
+        </a>
+        {% end %}
+      </div>
+    </div>
+
+    {% end %}
+
+{#
+    {% if users %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Users</h3>
+      </div>
+      <div class="list-group">
+        {% for user in users %}
+        <a href="{{ reverse_url("web:user", user.name) }}" class="list-group-item">
+          <span class="octicon octicon-person user-item-icon"></span> {{ user.name }}
+        </a>
+        {% end %}
+      </div>
+    </div>
+    {% end %}
+
+    {% if not repos and not users %}
+    <div class="well">
+      No results
+    </div>
+    {% end %}
+  </div>
+#}
+</div>
+{% end %}
