@@ -1,0 +1,35 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-3">
+    <h2 class="sidebar-heading">Settings</h2>
+  </div>
+  <div class="col-sm-9">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <a href="{{ reverse_url("web:new-token") }}" class="btn btn-default btn-xs pull-right">Generate new token</a>
+        <h3 class="panel-title">Application Tokens</h3>
+      </div>
+      <div class="panel-body">
+        <span class="text-muted">Tokens that you have generated and that can be used to push updates to repositories</span>
+      </div>
+      <div class="list-group">
+        {% for token in tokens %}
+        <div class="list-group-item{% if not token.seen %} list-group-item-success{% end %}">
+          <form action="{{ reverse_url("web:del-token", token.id) }}" method="post">
+            {% module xsrf_form_html() %}
+            <button class="btn btn-danger btn-xs pull-right">Delete</button>
+          </form>
+          {% if token.seen %}
+            {{ token.desc }}
+          {% else %}
+            <strong>Copy your new token:</strong> {{ token.value }}
+          {% end %}
+        </div>
+        {% end %}
+      </div>
+    </div>
+  </div>
+</div>
+{% end %}

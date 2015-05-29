@@ -11,8 +11,10 @@ routes = [
     url(r"/deauth", handlers.web.DeauthHandler, name="web:deauth"),
     url(r"/create", handlers.web.CreateRepoHandler, name="web:create-repo"),
     url(r"/settings", handlers.web.SettingsHandler, name="web:settings"),
-    # url(r"/settings/tokens/new", NewTokenHandler, name="new-token"),
-    # url(r"/settings/tokens/([0-9]+)/del", DelTokenHandler, name="del-token"),
+    url(r"/settings/tokens/new", handlers.web.NewTokenHandler,
+        name="web:new-token"),
+    url(r"/settings/tokens/([0-9]+)/del", handlers.web.DelTokenHandler,
+        name="web:del-token"),
     url(r"/([^/]+)", handlers.web.UserHandler, name="web:user"),
     url(r"/([^/]+)/([^/]+)", handlers.web.RepoHandler, name="web:repo"),
     url(r"/api/([^/]+)/([^/]+)", handlers.api.RepoHandler, name="api:repo"),
@@ -34,11 +36,11 @@ routes = [
 # POST  /settings/tokens/:id/del        Delete API token
 # GET   /:user                          User page
 # GET   /:user/:repo                    Repository access
-
-# PUT   /:user/:repo?key=URI
-# PUT   /:user/:repo?key=URI&datetime=DATETIME
-
-# GET   /:user/:repo?key=URI
-# GET   /:user/:repo?key=URI&datetime=DATETIME
-# GET   /:user/:repo?key=URI&timemap=true
-# GET   /:user/:repo?index=true
+#
+# PUT   /api/:user/:repo?key=URI
+# PUT   /api/:user/:repo?key=URI&datetime=DATETIME
+#
+# GET   /api/:user/:repo?key=URI
+# GET   /api/:user/:repo?key=URI&datetime=DATETIME
+# GET   /api/:user/:repo?key=URI&timemap=true
+# GET   /api/:user/:repo?index=true

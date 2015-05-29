@@ -1,10 +1,12 @@
+import random
+
 import tornado.escape
 import tornado.web
 
 from tornado.web import HTTPError, RequestHandler
 from tornado.web import authenticated
 
-from models import User, Repo
+from models import User, Repo, Token
 
 class BaseHandler(RequestHandler):
     """Base class for all web front end handlers."""
@@ -77,7 +79,39 @@ class CreateRepoHandler(BaseHandler):
         self.redirect(self.reverse_url("web:repo", user.name, repo.name))
 
 class SettingsHandler(BaseHandler):
-    pass
+    @authenticated
+    def get(self):
+        tokens = self.current_user.tokens
+        title = "Account settings"
+        self.render("settings/index.html", title=title, tokens=tokens)
+
+    def on_finish(self):
+        q = Token.update(seen=True).where(Token.user == self.current_user)
+        q.execute()
+
+class NewTokenHandler(BaseHandler):
+    @authenticated
+    def get(self):
+        self.render("tokens/new.html")
+
+    @authenticated
+    def post(self):
+        user = self.current_user
+        desc = self.get_argument("description")
+        value = "%040x" % random.randrange(16**40)
+        # TODO: Retry on duplicate token value (peewee.IntegrityError)?
+        Token.create(user=user, value=value, desc=desc)
+        self.redirect(self.reverse_url("web:settings"))
+
+class DelTokenHandler(BaseHandler):
+    @authenticated
+    def post(self, id):
+        try:
+            token = Token.get((Token.user == self.current_user) & (Token.id == id))
+            token.delete_instance()
+            self.redirect(self.reverse_url("web:settings"))
+        except:
+            raise HTTPError(404)
 
 class AuthHandler(BaseHandler):
     def get(self):

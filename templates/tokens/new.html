@@ -1,0 +1,20 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
+    <form action="{{ reverse_url("web:new-token") }}" method="post">
+      {% module xsrf_form_html() %}
+      <div class="form-group">
+        <label for="token-description-input">Description</label>
+        <input type="text" class="form-control" id="token-description-input" name="description" autofocus>
+        <span class="help-block">You can provide a short description for your token here, e.g. the name of the application you will use this token with.</span>
+      </div>
+      <hr>
+      <div class="form-group">
+        <button type="submit" class="btn btn-success">Generate token</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% end %}
