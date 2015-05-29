@@ -7,7 +7,7 @@
   <title>{% try %}{{ escape(title) }}{% except NameError %}tailr{% end %}</title>
   <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://oss.maxcdn.com/octicons/2.2.2/octicons.css">
+  <link rel="stylesheet" href="https://oss.maxcdn.com/octicons/2.2.3/octicons.css">
   <link rel="stylesheet" href="{{ static_url("stylesheets/base.css") }}">
   {% block stylesheets %}{% end %}
 </head>
@@ -36,21 +36,26 @@
         </ul>
         <ul class="nav navbar-nav navbar-right tlr-navbar-nav">
           {% if current_user %}
-          <li>
-            <a href="#"><span class="octicon octicon-gear"></span> <span class="octicon octicon-chevron-down dropdown-chevron"></span></a>
-            <!-- <a href="{#{{ reverse_url("web:user", current_user.name) }}#}"><span class="hidden">{{ current_user.name }}</span></a> -->
+          <li class="dropdown">
+            <a href="#" data-toggle="dropdown" role="button" aria-expanded="false">
+              <span class="hidden-xs"><span class="octicon octicon-gear"></span> <span class="octicon octicon-chevron-down dropdown-chevron"></span></span>
+              <span class="visible-xs">More</span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li class="callout-arrow"></li>
+              <li><a href="{#{{ reverse_url("web:user", current_user.name) }}#}">{{ current_user.name }}</a></li>
+              <li class="divider"></li>
+              <li><a href="{#{{ reverse_url("web:settings") }}#}">Settings</a></li>
+              <li>
+                <form class="navbar-form tlr-navbar-btn-form" action="{{ reverse_url("web:deauth") }}" method="post">
+                  {% module xsrf_form_html() %}
+                  <button type="submit" class="btn btn-link">Sign out</button>
+                </form>
+              </li>
+            </ul>
           </li>
-          <!-- <li>
-            <a href="{#{{ reverse_url("web:settings") }}#}" class="btn btn-link"><span class="octicon octicon-gear"></span></a>
-          </li> -->
           <li>
             <a href="{{ reverse_url("web:create-repo") }}" class="btn btn-default">Create Repo</a>
-          </li>
-          <li>
-            <form class="navbar-form tlr-navbar-btn-form" action="{{ reverse_url("web:deauth") }}" method="post">
-              {% module xsrf_form_html() %}
-              <!-- <button type="submit" class="btn btn-link"><span class="octicon octicon-sign-out"></span></button> -->
-            </form>
           </li>
           {% else %}
           <li><a href="{{ reverse_url("web:auth") }}">Sign in</a></li>
