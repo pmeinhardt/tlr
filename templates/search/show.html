@@ -2,15 +2,21 @@
 
 {% block content %}
 <div class="row">
-  <div class="col-sm-3">
-    <h2 class="sidebar-heading">Search</h2>
+  <div class="col-sm-10 col-sm-offset-1">
+    <div class="masthead">
+      <h1 class="text-center">Search</h1>
+      <p class="text-center text-muted">Lorem ipsum dolor. Sit amet reciprodum.</p>
+      <form action="{{ reverse_url("web:search") }}" method="get">
+        <div class="form-group">
+          <input type="text" class="form-control input-lg" id="refine-search-input" name="q" value="{{ query }}" placeholder="Search users and repositories" autofocus>
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="col-sm-9">
-    <form action="{{ reverse_url("web:search") }}" method="get">
-      <div class="form-group">
-        <input type="text" class="form-control" id="refine-search-input" name="q" value="{{ query }}" placeholder="Search" autofocus>
-      </div>
-    </form>
+</div>
+
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
 
     {% if repos %}
     <div class="panel panel-default repo-listing">
@@ -31,10 +37,8 @@
         {% end %}
       </div>
     </div>
-
     {% end %}
 
-{#
     {% if users %}
     <div class="panel panel-default">
       <div class="panel-heading">
@@ -56,6 +60,5 @@
     </div>
     {% end %}
   </div>
-#}
 </div>
 {% end %}

@@ -1,20 +1,30 @@
 {% extends "../base.html" %}
 
 {% block content %}
-<div class="repo-head">
-  <h3 class="repo-title"><span class="mega-octicon octicon-repo repo-icon"></span> <a href="{{ reverse_url("web:user", repo.user.name) }}" class="repo-title-username">{{ repo.user.name }}</a><span class="path-divider">/</span><a href="{{ reverse_url("web:repo", repo.user.name, repo.name) }}" class="repo-title-reponame">{{ repo.name }}</a></h3>
-  <p class="text-muted">{{ repo.desc }}</p>
-</div>
-
-<div class="alert alert-info" role="alert"><strong>Nothing to see yet.</strong> This page is still being developed.</div>
-
-{% if current_user == repo.user %}
-<div class="panel panel-default">
-  <div class="panel-body">
-    <h4>Getting started</h4>
-    <p>Info on pushing data to the repository, see <a href="https://github.com/pmeinhardt/tailr#pushing-changes">https://github.com/pmeinhardt/tailr</a>.</p>
-    <p class="text-muted">TODO: Inline essential information here.</p>
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
+    <div class="masthead">
+      <div class="repo-head">
+        <h1 class="repo-title"><a href="{{ reverse_url("web:user", repo.user.name) }}" class="repo-title-username">{{ repo.user.name }}</a><span class="path-divider">/</span><a href="{{ reverse_url("web:repo", repo.user.name, repo.name) }}" class="repo-title-reponame">{{ repo.name }}</a> <span class="mega-octicon octicon-repo repo-icon"></span></h1>
+        <p class="text-muted">{{ repo.desc }}</p>
+      </div>
+    </div>
   </div>
 </div>
-{% end %}
+
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
+    <div class="alert alert-info" role="alert"><strong>Nothing to see yet.</strong> This page is still being developed.</div>
+
+    {% if current_user == repo.user %}
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <h4>Getting started</h4>
+        <p>Info on pushing data to the repository, see <a href="https://github.com/pmeinhardt/tailr#pushing-changes">https://github.com/pmeinhardt/tlr</a>.</p>
+        <p class="text-muted">TODO: Inline essential information here.</p>
+      </div>
+    </div>
+    {% end %}
+  </div>
+</div>
 {% end %}

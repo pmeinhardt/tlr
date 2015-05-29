@@ -55,6 +55,11 @@ body {
   box-shadow: none;
 }
 
+.well {
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
 /* custom branding */
 
 .tlr-navbar {
@@ -230,16 +235,9 @@ body {
 
 /* other */
 
-.sidebar-heading {
-  margin-top: 0;
+.masthead {
+  padding-bottom: 20px;
 }
-
-
-
-
-
-
-
 
 /* user listing */
 
@@ -270,26 +268,20 @@ body {
 /* repo view */
 
 .repo-head {
-  margin-bottom: 15px;
+  text-align: center;
 }
 
 .repo-head .repo-icon {
-  position: absolute;
-  top: -2px;
-  left: 0;
+  margin-left: .25em;
+  position: relative;
+  top: 2px;
   color: #bbb;
 }
 
 .repo-head .repo-title {
   position: relative;
-  margin-top: 10px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 20px;
-  margin-bottom: 10px;
-  padding-left: 35px;
-  font-size: 21px;
   font-weight: normal;
-  color: #777;
+  color: #888;
 }
 
 .repo-head .repo-title-username {}
@@ -300,10 +292,6 @@ body {
 
 .repo-head .repo-title-reponame {
   font-weight: bold;
-}
-
-.repo-head .repo-description {
-  margin-bottom: 15px;
 }
 
 /* tree listing */

@@ -36,10 +36,12 @@ class SearchHandler(BaseHandler):
             pattern = "%" + query + "%"
             repos = (Repo.select().join(User).alias("user")
                 .where(Repo.name ** pattern))
+            users = User.select().where(User.name ** pattern)
         else:
             repos = []
+            users = []
 
-        self.render("search/show.html", query=query, repos=repos)
+        self.render("search/show.html", query=query, repos=repos, users=users)
 
 class UserHandler(BaseHandler):
     def get(self, username):
