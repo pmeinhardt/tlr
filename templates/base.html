@@ -43,9 +43,9 @@
             </a>
             <ul class="dropdown-menu" role="menu">
               <li class="callout-arrow"></li>
-              <li><a href="{#{{ reverse_url("web:user", current_user.name) }}#}">{{ current_user.name }}</a></li>
+              <li><a href="{{ reverse_url("web:user", current_user.name) }}">{{ current_user.name }}</a></li>
               <li class="divider"></li>
-              <li><a href="{#{{ reverse_url("web:settings") }}#}">Settings</a></li>
+              <li><a href="{{ reverse_url("web:settings") }}">Settings</a></li>
               <li>
                 <form class="navbar-form tlr-navbar-btn-form" action="{{ reverse_url("web:deauth") }}" method="post">
                   {% module xsrf_form_html() %}

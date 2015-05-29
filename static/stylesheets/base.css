@@ -228,7 +228,11 @@ body {
   }
 }
 
+/* other */
 
+.sidebar-heading {
+  margin-top: 0;
+}
 
 
 
