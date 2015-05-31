@@ -179,6 +179,7 @@ class RepoHandler(BaseHandler):
                         else:
                             stmts.discard(stmt)
 
+            self.set_header("Content-Type", "application/n-quads")
             self.write(join(stmts, "\n"))
         elif key and timemap:
             # Generate a timemap containing historic change information
