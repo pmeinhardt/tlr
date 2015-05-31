@@ -356,7 +356,7 @@ class RepoHandler(BaseHandler):
 
         try:
             last = (CSet
-                .select(CSet.type)
+                .select(CSet.time, CSet.type)
                 .where((CSet.repo == repo) & (CSet.hkey == sha))
                 .order_by(CSet.time.desc())
                 .limit(1)
@@ -365,6 +365,10 @@ class RepoHandler(BaseHandler):
         except CSet.DoesNotExist:
             # No changeset was found for the given key -
             # the resource does not exist.
+            raise HTTPError(400)
+
+        if not ts > last.time:
+            # Appended timestamps must be monotonically increasing!
             raise HTTPError(400)
 
         if last.type == CSet.DELETE:
