@@ -239,6 +239,10 @@ body {
   padding-bottom: 20px;
 }
 
+.masthead form {
+  margin-top: 30px;
+}
+
 /* user listing */
 
 .user-item-icon {
