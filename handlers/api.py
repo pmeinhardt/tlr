@@ -90,7 +90,7 @@ class RepoHandler(BaseHandler):
     def get(self, username, reponame):
         timemap = self.get_query_argument("timemap", "false") == "true"
         index = self.get_query_argument("index", "false") == "true"
-        key = self.get_query_argument("key")
+        key = self.get_query_argument("key", None)
 
         if (index and timemap) or (index and key) or (timemap and not key):
             raise HTTPError(400)
