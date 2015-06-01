@@ -6,6 +6,7 @@ import time
 import zlib
 
 from tornado.web import HTTPError, RequestHandler
+from tornado.escape import url_escape
 from peewee import IntegrityError, SQL
 import RDF
 
@@ -22,6 +23,9 @@ def authenticated(method):
 
 # Query string date format, e.g. `...?datetime=2015-05-11-16:56:21`
 QSDATEFMT = "%Y-%m-%d-%H:%M:%S"
+
+# RFC 1123 date format, e.g. `Mon, 11 May 2015 16:56:21 GMT`
+RFC1123DATEFMT = "%a, %d %b %Y %H:%M:%S GMT"
 
 def date(s, fmt):
     return datetime.datetime.strptime(s, fmt)
@@ -187,8 +191,39 @@ class RepoHandler(BaseHandler):
 
             sha = shasum(key.encode("utf-8"))
 
-            # TODO: Gen. timemap by selecting timestamps from csets for resource
+            csets = (CSet
+                .select(CSet.time)
+                .where((CSet.repo == repo) & (CSet.hkey == sha))
+                .order_by(CSet.time.desc())
+                .naive())
+
+            # Serialize into Link format
             # TODO: Paginate?
+
+            csit = csets.iterator()
+
+            try:
+                first = csit.next()
+            except StopIteration:
+                # Resource for given key does not exist.
+                raise HTTPError(404)
+
+            req = self.request
+            base = req.protocol + "://" + req.host + req.path
+
+            m = (',\n<' + base + '?key=' + url_escape(key) + '&datetime={0}>'
+                '; rel="memento"'
+                '; datetime="{1}"'
+                '; type="application/n-quads"')
+
+            self.set_header("Content-Type", "application/link-format")
+            self.write('<' + key + '>; rel="original"')
+            self.write(m.format(first.time.strftime(QSDATEFMT),
+                first.time.strftime(RFC1123DATEFMT)))
+
+            for cs in csit:
+                self.write(m.format(cs.time.strftime(QSDATEFMT),
+                    cs.time.strftime(RFC1123DATEFMT)))
         elif index:
             # Generate an index of all URIs contained in the dataset at the
             # provided point in time or in its current state.
