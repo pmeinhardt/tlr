@@ -117,6 +117,9 @@ class RepoHandler(BaseHandler):
             # if no `datetime` was provided - or in the state it was in at
             # the time indicated by the passed `datetime` argument.
 
+            self.set_header("Content-Type", "application/n-quads")
+            # self.set_header("Vary", "accept-datetime")
+
             sha = shasum(key.encode("utf-8"))
 
             # Fetch all relevant changes from the last "non-delta" onwards,
@@ -183,7 +186,6 @@ class RepoHandler(BaseHandler):
                         else:
                             stmts.discard(stmt)
 
-            self.set_header("Content-Type", "application/n-quads")
             self.write(join(stmts, "\n"))
         elif key and timemap:
             # Generate a timemap containing historic change information
@@ -227,6 +229,8 @@ class RepoHandler(BaseHandler):
         elif index:
             # Generate an index of all URIs contained in the dataset at the
             # provided point in time or in its current state.
+
+            # self.set_header("Vary", "accept-datetime")
 
             # TODO Paginate! Filter? (See peewee's `.paginate()`)
 
