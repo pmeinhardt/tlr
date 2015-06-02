@@ -341,7 +341,9 @@ class RepoHandler(BaseHandler):
                         else:
                             prev.discard(stmt)
 
-            # TODO: Check stmts != prev (actual change or bail out)
+            if stmts == prev:
+                # No changes, nothing to be done. Bail out.
+                return self.finish()
 
             patch = compress(join(
                 map(lambda s: "D " + s, prev - stmts) +
