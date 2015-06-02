@@ -1,6 +1,10 @@
+import functools
 import random
 
+import tornado.auth
 import tornado.escape
+import tornado.gen
+import tornado.httpclient
 import tornado.web
 
 from tornado.web import HTTPError, RequestHandler
@@ -115,18 +119,73 @@ class DelTokenHandler(BaseHandler):
         except:
             raise HTTPError(404)
 
-class AuthHandler(BaseHandler):
-    def get(self):
-        if not self.current_user:
-            self.render("auth/new.html", title="Sign in - tailr")
-        else:
-            self.redirect("/")
+class GitHubOAuth2Mixin(tornado.auth.OAuth2Mixin):
+    """GitHub authentication using OAuth2."""
 
-    def post(self):
-        # TODO: Proper authentication
-        user = User.get(User.name == self.get_argument("username"))
-        self.set_secure_cookie("uid", str(user.id))
-        self.redirect(self.get_argument("next", "/"))
+    _OAUTH_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
+    _OAUTH_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
+    _OAUTH_SETTINGS_KEY = "github_oauth"
+
+    @tornado.auth._auth_return_future
+    def get_authenticated_user(self, redirect_uri, code, callback):
+        http = self.get_auth_http_client()
+
+        body = tornado.auth.urllib_parse.urlencode({
+            "redirect_uri": redirect_uri,
+            "code": code,
+            "client_id": self.settings[self._OAUTH_SETTINGS_KEY]["key"],
+            "client_secret": self.settings[self._OAUTH_SETTINGS_KEY]["secret"],
+            "grant_type": "authorization_code",
+        })
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+        }
+
+        http.fetch(self._OAUTH_ACCESS_TOKEN_URL,
+            functools.partial(self._on_access_token, callback),
+            method="POST", headers=headers, body=body)
+
+    def _on_access_token(self, future, response):
+        if response.error:
+            msg = "GitHub auth error: %s" % str(response)
+            future.set_exception(tornado.auth.AuthError(msg))
+            return
+
+        args = tornado.escape.json_decode(response.body)
+        future.set_result(args)
+
+    def get_auth_http_client(self):
+        return tornado.httpclient.AsyncHTTPClient()
+
+class AuthHandler(BaseHandler, GitHubOAuth2Mixin):
+    @tornado.gen.coroutine
+    def get(self):
+        if self.get_argument("code", False):
+            user = yield self.get_authenticated_user(
+                redirect_uri="http://localhost:5000/auth",
+                code=self.get_argument("code"))
+            self.write(user)
+            # self.set_secure_cookie("uid", str(user.id))
+            # self.redirect(self.get_argument("next", "/"))
+        else:
+            yield self.authorize_redirect(
+                redirect_uri="http://localhost:5000/auth",
+                client_id=self.settings["github_oauth"]["key"],
+                response_type="code",
+                scope=["user:email"])
+
+    # def get(self):
+    #     if not self.current_user:
+    #         self.render("auth/new.html", title="Sign in - tailr")
+    #     else:
+    #         self.redirect("/")
+    #
+    # def post(self):
+    #     user = User.get(User.name == self.get_argument("username"))
+    #     self.set_secure_cookie("uid", str(user.id))
+    #     self.redirect(self.get_argument("next", "/"))
 
 class DeauthHandler(BaseHandler):
     def post(self):

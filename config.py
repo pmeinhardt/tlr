@@ -19,6 +19,8 @@ env = os.environ
 settings = dict(
     cookie_secret       = env["COOKIE_SECRET"],         # required
     debug               = env.get("DEBUG", "0") == "1", # set for development
+    github_oauth        = dict(key=env["GITHUB_CLIENT_ID"],
+                              secret=env["GITHUB_SECRET"]),
     login_url           = "/auth",
     static_path         = rel(root, "static"),
     static_url_prefix   = "/static/",
