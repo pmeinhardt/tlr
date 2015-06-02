@@ -123,6 +123,7 @@ class AuthHandler(BaseHandler):
             self.redirect("/")
 
     def post(self):
+        # TODO: Proper authentication
         user = User.get(User.name == self.get_argument("username"))
         self.set_secure_cookie("uid", str(user.id))
         self.redirect(self.get_argument("next", "/"))
