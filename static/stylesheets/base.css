@@ -123,9 +123,12 @@ body {
 }
 
 .tlr-navbar .nav .dropdown-menu .btn-link {
-  text-decoration: none;
+  display: block;
+  width: 100%;
   padding: 3px 20px;
   border: 0;
+  text-align: left;
+  text-decoration: none;
 }
 
 .tlr-navbar .nav .dropdown-menu > li > a {
@@ -182,9 +185,6 @@ body {
   .tlr-navbar .nav .dropdown-menu .btn-link {
     padding: 5px 15px 5px 25px;
     margin: 0;
-    display: block;
-    width: 100%;
-    text-align: left;
   }
 
   .tlr-navbar .nav .btn {
