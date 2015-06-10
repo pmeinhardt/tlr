@@ -327,6 +327,12 @@ class RepoHandler(BaseHandler):
 
         if len(chain) != 0 and chain[0].type != CSet.DELETE:
             # Reconstruct the previous state of the resource from head
+
+            # TODO: Actually, heads might be better off in a real (in-memory)
+            # cache, e.g. Memcached, than in the database. If we see a cache-
+            # miss, we would fall back to reconstructing through the chain
+            # again (as implemented before).
+
             head = Head.get((Head.repo == repo) & (Head.hkey == sha)).naive()
             prev = set(decompress(head.data).splitlines())
 
