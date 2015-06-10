@@ -85,6 +85,10 @@ class BaseHandler(RequestHandler):
     def check_xsrf_cookie(self):
         pass
 
+    @property
+    def database(self):
+        return self.application.database
+
 class RepoHandler(BaseHandler):
     """Processes repository calls: Push, timegate, memento, timemap etc."""
 
@@ -100,7 +104,7 @@ class RepoHandler(BaseHandler):
             raise HTTPError(400)
 
         datestr = self.get_query_argument("datetime", None)
-        ts = datestr and date(datestr, QSDATEFMT) or now()
+        ts = datestr and date(datestr, QSDATEFMT) or None
 
         try:
             repo = (Repo
@@ -121,6 +125,15 @@ class RepoHandler(BaseHandler):
             # self.set_header("Vary", "accept-datetime")
 
             sha = shasum(key.encode("utf-8"))
+
+            if not ts:
+                # No datetime specified, reply using head.
+                try:
+                    Head.get((Head.repo == repo) & (Head.hkey == sha)).naive()
+                    self.write(decompress(head.data))
+                    return
+                except Head.DoesNotExist:
+                    raise HTTPError(404)
 
             # Fetch all relevant changes from the last "non-delta" onwards,
             # ordered by time. The returned delta-chain consists of either:
@@ -310,36 +323,12 @@ class RepoHandler(BaseHandler):
         stmts = parse(self.request.body, fmt)
         snapc = compress(join(stmts, "\n"))
 
-        if len(chain) == 0 or chain[0].type == CSet.DELETE:
-            # Provide dummy value for `patch` which is never stored.
-            # If we get here, we always store a snapshot later on!
-            patch = ""
-        else:
-            # Reconstruct the previous state of the resource
-            prev = set()
+        patch = None
 
-            blobs = (Blob
-                .select(Blob.data)
-                .where(
-                    (Blob.repo == repo) &
-                    (Blob.hkey == sha) &
-                    (Blob.time << map(lambda e: e.time, chain)))
-                .order_by(Blob.time)
-                .naive())
-
-            for i, blob in enumerate(blobs.iterator()):
-                data = decompress(blob.data)
-
-                if i == 0:
-                    # Base snapshot for the delta chain
-                    prev.update(data.splitlines())
-                else:
-                    for line in data.splitlines():
-                        mode, stmt = line[0], line[2:]
-                        if mode == "A":
-                            prev.add(stmt)
-                        else:
-                            prev.discard(stmt)
+        if len(chain) != 0 and chain[0].type != CSet.DELETE:
+            # Reconstruct the previous state of the resource from head
+            head = Head.get((Head.repo == repo) & (Head.hkey == sha)).naive()
+            prev = set(decompress(head.data).splitlines())
 
             if stmts == prev:
                 # No changes, nothing to be done. Bail out.
@@ -351,21 +340,28 @@ class RepoHandler(BaseHandler):
 
         # Calculate the accumulated size of the delta chain including
         # the (potential) patch from the previous to the pushed state.
-        acclen = reduce(lambda s, e: s + e.len, chain[1:], 0) + len(patch)
+        patlen = patch and len(patch) or 0 # zero-value won't matter
+        acclen = reduce(lambda s, e: s + e.len, chain[1:], 0) + patlen
 
         blen = len(chain) > 0 and chain[0].len or 0 # base length
 
-        if (len(chain) == 0 or chain[0].type == CSet.DELETE or
-            len(snapc) <= len(patch) or SNAPF * blen <= acclen):
-            # Store the current state as a new snapshot
-            Blob.create(repo=repo, hkey=sha, time=ts, data=snapc)
-            CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.SNAPSHOT,
-                len=len(snapc))
-        else:
-            # Store a directed delta between the previous and current state
-            Blob.create(repo=repo, hkey=sha, time=ts, data=patch)
-            CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.DELTA,
-                len=len(patch))
+        with self.database.transaction():
+            if (len(chain) == 0 or chain[0].type == CSet.DELETE or
+                len(snapc) <= patlen or SNAPF * blen <= acclen):
+                # Store the current state as a new snapshot
+                Blob.create(repo=repo, hkey=sha, time=ts, data=snapc)
+                CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.SNAPSHOT,
+                    len=len(snapc))
+            else:
+                # Store a directed delta between the previous and current state
+                Blob.create(repo=repo, hkey=sha, time=ts, data=patch)
+                CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.DELTA,
+                    len=len(patch))
+
+            if len(chain) == 0:
+                Head.create(repo=repo, hkey=sha, time=ts, data=snapc)
+            else:
+                Head.update(time=ts, data=snapc).where(repo=repo, hkey=sha)
 
     @authenticated
     def delete(self, username, reponame):

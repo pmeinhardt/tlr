@@ -57,5 +57,14 @@ class Blob(Base):
     class Meta:
         primary_key = CompositeKey("repo", "hkey", "time")
 
+def Head(Base):
+    repo = ForeignKeyField(Repo, related_name="heads", null=False)
+    hkey = ForeignKeyField(HMap, null=False)
+    time = MSQLTimestampField(precision=0, null=False)
+    data = BlobField()
+
+    class Meta:
+        primary_key = CompositeKey("repo", "hkey")
+
 def initialize(database, blobstore):
     dbproxy.initialize(database)
