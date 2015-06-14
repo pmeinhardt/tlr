@@ -7,7 +7,7 @@ peewee~=2.6.0
 pymysql~=0.6.6
 
 # RDF support
-rdflib~=4.2.0
+# librdf (not a pip package)
 
 # Shell
 ipython~=3.1.0
