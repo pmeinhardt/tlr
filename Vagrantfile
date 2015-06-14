@@ -14,10 +14,11 @@ Vagrant.configure(2) do |config|
   # config.vm.box_check_update = false
 
   # Hostname the machine should have. The hostname will be set on boot.
-  config.vm.hostname = "tailr.local"
+  config.vm.hostname = "dockerhost.local"
 
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine.
+  config.vm.network "forwarded_port", guest: 5000,  host: 5000  # Tornado
   config.vm.network "forwarded_port", guest: 80,    host: 8080  # HTTP
   config.vm.network "forwarded_port", guest: 443,   host: 8443  # HTTPS
   config.vm.network "forwarded_port", guest: 3306,  host: 3306  # MariaDB
@@ -39,13 +40,14 @@ Vagrant.configure(2) do |config|
   #   v.memory = "1024"
   # end
 
-  # Enable provisioning with Ansible.
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "ansible/site.yml"
-    ansible.extra_vars = "ansible/vars/vagrant.yml"
-    ansible.groups = {
-      "web" => ["default"],
-      "db"  => ["default"]
-    }
+  # Enable provisioning with Docker.
+  config.vm.provision "docker" do |docker|
+    docker.images = %w[mariadb python:2.7.10]
   end
+
+  # Provision using a shell.
+  config.vm.provision "shell", inline: <<-SH
+    curl -sSL https://github.com/docker/compose/releases/download/1.2.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+  SH
 end

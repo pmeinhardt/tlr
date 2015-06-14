@@ -1,0 +1,20 @@
+---
+db:
+  image: mariadb
+  environment:
+    MYSQL_ROOT_PASSWORD: root
+    MYSQL_USER: tailr
+    MYSQL_PASSWORD: tailr
+    MYSQL_DATABASE: tailr
+app:
+  build: .
+  environment:
+    DATABASE_URL: mysql://tailr:tailr@db/tailr
+    COOKIE_SECRET: secret
+    DEBUG: 1
+  volumes:
+    - .:/home/tailr/app
+  ports:
+    - "5000:5000"
+  links:
+    - db
