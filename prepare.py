@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from database import MariaDB as Database
+from database import MDB as Database
 
 from config import dbconf, bsconf
 from models import *

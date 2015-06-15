@@ -27,12 +27,12 @@ settings = dict(
     xsrf_cookies        = True,
 )
 
-# Database configuration (PostgreSQL)
-# http://peewee.readthedocs.org/en/latest/peewee/database.html#using-postgresql
+# Database configuration (MariaDB or MySQL)
+# http://peewee.readthedocs.org/en/latest/peewee/database.html#using-mysql
 #
 # The connection parameters are parsed from a DSN (Data Source Name) string.
-# A Postgres DSN string typically uses the following scheme:
-# DATABASE_URL="postgres://user:password@host/database"
+# A MariaDB or MySQL DSN string typically uses the following scheme:
+# DATABASE_URL="mysql://user:password@host:port/database"
 
 dbconf = playhouse.db_url.parse(env["DATABASE_URL"])
 

@@ -2,7 +2,7 @@
 
 # Load application environment and initialize models
 
-from database import MariaDB as Database
+from database import MDB as Database
 
 from config import settings, dbconf, bsconf
 from models import *

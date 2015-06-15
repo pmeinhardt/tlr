@@ -87,9 +87,9 @@ class MSQLEnumField(Field):
     def db_value(self, value):
         return "'{0}'".format(value)
 
-class MariaDB(MySQLDatabase): pass
+class MDB(MySQLDatabase): pass
 
-MariaDB.register_fields({
+MDB.register_fields({
     "binary": "BINARY",
     "tinyint": "TINYINT",
     "smallint": "SMALLINT",
