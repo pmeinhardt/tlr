@@ -46,7 +46,7 @@ class SearchHandler(BaseHandler):
 class UserHandler(BaseHandler):
     def get(self, username):
         try:
-            user = User.select().join(Repo).where(User.name == username).get()
+            user = User.select().where(User.name == username).get()
             self.render("user/show.html", title=user.name, user=user)
         except User.DoesNotExist:
             raise HTTPError(404)
