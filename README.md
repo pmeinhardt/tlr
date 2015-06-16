@@ -22,6 +22,10 @@ In order to sign cookies and prevent forgery, Tornado requires you to set a cook
 python -c "import random; print '%0256x' % random.randrange(16**256)"
 ```
 
+**`GITHUB_CLIENT_ID` and `GITHUB_SECRET`**
+
+Sign up and sign in for users via [GitHub OAuth](https://developer.github.com/v3/oauth/) is supported. You will need to create an application from your [GitHub settings page](https://github.com/settings/developers) and set these two environment variables to the values belonging to the created application.
+
 **`DEBUG`**
 
 To enable Tornado [debug mode](http://tornado.readthedocs.org/en/stable/guide/running.html#debug-mode-and-automatic-reloading), set this variable to `1`. This should mostly be used during development. The default value is `0`.
