@@ -8,7 +8,7 @@
         <h3 class="panel-title">GitHub Authentication</h3>
       </div>
       <div class="panel-body text-center">
-        <a class="btn btn-lg btn-success" href="{{ reverse_url("web:github-auth") }}"><span class="octicon octicon-mark-github"></span> Sign in via GitHub</a>
+        <a class="btn btn-lg btn-success" href="{{ reverse_url("web:github-auth") }}"><span class="octicon octicon-mark-github"></span> Sign up via GitHub</a>
       </div>
     </div>
   </div>
@@ -16,7 +16,7 @@
 
 <div class="row">
   <div class="col-sm-12">
-    <p class="text-center text-muted signin-form-choice">or sign in using your username and password… (available soon)</p>
+    <p class="text-center text-muted signin-form-choice">or sign up using your email and password… (available soon)</p>
   </div>
 </div>
 
@@ -24,20 +24,24 @@
   <div class="col-sm-6 col-sm-offset-3">
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title">Sign in</h3>
+        <h3 class="panel-title">Sign up</h3>
       </div>
       <div class="panel-body">
-        <form action="{{ request.uri }}" method="post">
+        <form action="/auth" method="post">
           {% module xsrf_form_html() %}
           <div class="form-group">
             <label for="auth-username-input">Username</label>
             <input type="text" class="form-control" id="auth-username-input" name="username" autofocus disabled>
           </div>
           <div class="form-group">
+            <label for="auth-email-input">Email</label>
+            <input type="text" class="form-control" id="auth-email-input" name="email" disabled>
+          </div>
+          <div class="form-group">
             <label for="auth-password-input">Password</label>
             <input type="password" class="form-control" id="auth-password-input" name="password" disabled>
           </div>
-          <input type="submit" class="btn btn-default" value="Sign in" disabled>
+          <input type="submit" class="btn btn-default" value="Sign up" disabled>
         </form>
       </div>
     </div>

@@ -10,6 +10,13 @@ class Base(Model):
 class User(Base):
     id = PrimaryKeyField()
     name = CharField(unique=True, null=False, index=True)
+    confirmed = BooleanField(default=False, null=False)
+    github_id = MSQLIntegerField(unsigned=True, null=True)
+    homepage_url = CharField(default=None, null=True)
+    avatar_url = CharField(default=None, null=True)
+    email = CharField(default=None, null=True)
+    # salt = CharField(...)
+    # ...
 
 class Token(Base):
     id = PrimaryKeyField()

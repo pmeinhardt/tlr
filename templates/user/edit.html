@@ -1,0 +1,51 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
+    <div class="masthead">
+      <h2 class="text-center">Update your account information</h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
+    <form class="form-horizontal" action="{{ request.uri }}" method="post">
+      {% module xsrf_form_html() %}
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="username-input">Username</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="username-input" name="username" value="{{ user.name }}" autofocus>
+          <span class="help-block">Changing your username may have unintended side-effects. I.e. your repository URIs will change.</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="homepage-input">Homepage URL</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="homepage-input" name="homepage" value="{{ user.homepage_url }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="avatar-input">Avatar URL</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="avatar-input" name="avatar" value="{{ user.avatar_url }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="email-input">Email address</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="email-input" name="email" value="{{ user.email or "" }}">
+        </div>
+      </div>
+      <hr>
+      <div class="form-group">
+        <div class="col-sm-10 col-sm-offset-2">
+          <button type="submit" class="btn btn-success">Update</button>
+          <a class="btn btn-default" href="{{ reverse_url("web:settings") }}">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% end %}

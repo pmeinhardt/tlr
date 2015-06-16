@@ -7,7 +7,7 @@
   <title>{% try %}{{ escape(title) }}{% except NameError %}tailr{% end %}</title>
   <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://oss.maxcdn.com/octicons/2.2.3/octicons.css">
+  <link rel="stylesheet" href="https://oss.maxcdn.com/octicons/2.4.1/octicons.css">
   <link rel="stylesheet" href="{{ static_url("stylesheets/base.css") }}">
   {% block stylesheets %}{% end %}
 </head>
@@ -59,7 +59,7 @@
           </li>
           {% else %}
           <li><a href="{{ reverse_url("web:auth") }}">Sign in</a></li>
-          <li><a class="btn btn-default" href="{#{{ reverse_url("web:join") }}#}">Sign up</a></li>
+          <li><a class="btn btn-default" href="{{ reverse_url("web:join") }}">Sign up</a></li>
           {% end %}
         </ul>
       </nav>
