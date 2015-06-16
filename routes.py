@@ -6,8 +6,10 @@ import handlers.api
 routes = [
     url(r"/", handlers.web.HomeHandler, name="web:home"),
     url(r"/search", handlers.web.SearchHandler, name="web:search"),
-    # url(r"/join", handlers.web.JoinHandler, name="web:join"),
+    url(r"/join", handlers.web.JoinHandler, name="web:join"),
     url(r"/auth", handlers.web.AuthHandler, name="web:auth"),
+    url(r"/auth/github", handlers.web.GitHubAuthHandler,
+        name="web:github-auth"),
     url(r"/deauth", handlers.web.DeauthHandler, name="web:deauth"),
     url(r"/create", handlers.web.CreateRepoHandler, name="web:create-repo"),
     url(r"/settings", handlers.web.SettingsHandler, name="web:settings"),
@@ -27,6 +29,7 @@ routes = [
 # POST  /join                           Create a new user account
 # GET   /auth                           Sign in form, provide credentials
 # POST  /auth                           Sign in, create session
+# GET   /auth/github                    Authenticate via GitHub OAuth
 # POST  /deauth                         Sign out, destroy session
 # GET   /create                         Enter information for new repository
 # POST  /create                         Create new repository

@@ -59,7 +59,7 @@
           </li>
           {% else %}
           <li><a href="{{ reverse_url("web:auth") }}">Sign in</a></li>
-          <li><a class="btn btn-default" href="{#{{ reverse_url("web:join") }}#}">Sign up</a></li>
+          <li><a class="btn btn-default" href="{{ reverse_url("web:join") }}">Sign up</a></li>
           {% end %}
         </ul>
       </nav>

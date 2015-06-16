@@ -243,6 +243,12 @@ body {
   margin-top: 30px;
 }
 
+/* sign in and sign up */
+
+.signin-form-choice {
+  margin-bottom: 20px;
+}
+
 /* user listing */
 
 .user-item-icon {

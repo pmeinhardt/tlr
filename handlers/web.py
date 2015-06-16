@@ -20,6 +20,12 @@ class BaseHandler(RequestHandler):
         user = User.get(User.id == uid) if uid else None
         return user
 
+    def set_current_user(self, user):
+        self.set_secure_cookie("uid", str(user.id))
+
+    def clear_current_user(self):
+        self.clear_cookie("uid")
+
     def write_error(self, status_code, **kwargs):
         if status_code == 404:
             self.render("error/404.html")
@@ -119,6 +125,44 @@ class DelTokenHandler(BaseHandler):
         except:
             raise HTTPError(404)
 
+class JoinHandler(BaseHandler):
+    """Allows users to join through email and password or GitHub OAuth."""
+
+    def get(self):
+        if not self.current_user:
+            self.render("join/new.html")
+        else:
+            self.redirect("/")
+
+    # def post(self):
+    #     email = self.get_argument("email")
+    #     name = self.get_argument("username")
+    #     pass, salt = ...
+    #     try:
+    #         User.create(name=username, email=email, pass=pass, salt=salt)
+    #     except peewee.IntegrityError:
+    #         self.redirect(self.reverse_url("web:join"))
+    #     self.redirect("/")
+
+class AuthHandler(BaseHandler):
+    """Authenticates users via username and password."""
+
+    def get(self):
+        if not self.current_user:
+            self.render("auth/new.html", title="Sign in - tailr")
+        else:
+            self.redirect("/")
+
+    # def post(self):
+    #     username = self.get_argument("username")
+    #     user = User.get(User.name == username)
+    #     # confirm password, else deny access
+    #     if == ...:
+    #         self.set_current_user(user)
+    #         self.redirect(self.get_argument("next", "/"))
+    #     else:
+    #         self.redirect(self.reverse_url("web:auth"))
+
 class GitHubOAuth2Mixin(tornado.auth.OAuth2Mixin):
     """GitHub authentication using OAuth2."""
 
@@ -159,37 +203,29 @@ class GitHubOAuth2Mixin(tornado.auth.OAuth2Mixin):
     def get_auth_http_client(self):
         return tornado.httpclient.AsyncHTTPClient()
 
-class AuthHandler(BaseHandler, GitHubOAuth2Mixin):
+class GitHubAuthHandler(BaseHandler, GitHubOAuth2Mixin):
+    """Authenticates users via GitHub OAuth."""
+
     @tornado.gen.coroutine
     def get(self):
         if self.get_argument("code", False):
             user = yield self.get_authenticated_user(
-                redirect_uri="http://localhost:5000/auth",
+                redirect_uri="http://localhost:5000/auth/github",
                 code=self.get_argument("code"))
             self.write(user)
             # self.set_secure_cookie("uid", str(user.id))
             # self.redirect(self.get_argument("next", "/"))
         else:
             yield self.authorize_redirect(
-                redirect_uri="http://localhost:5000/auth",
+                redirect_uri="http://localhost:5000/auth/github",
                 client_id=self.settings["github_oauth"]["key"],
                 response_type="code",
                 scope=["user:email"])
 
-    # def get(self):
-    #     if not self.current_user:
-    #         self.render("auth/new.html", title="Sign in - tailr")
-    #     else:
-    #         self.redirect("/")
-    #
-    # def post(self):
-    #     user = User.get(User.name == self.get_argument("username"))
-    #     self.set_secure_cookie("uid", str(user.id))
-    #     self.redirect(self.get_argument("next", "/"))
-
 class DeauthHandler(BaseHandler):
+    @authenticated
     def post(self):
-        self.clear_cookie("uid")
+        self.clear_current_user()
         self.redirect("/")
 
 class ErrorHandler(BaseHandler):
