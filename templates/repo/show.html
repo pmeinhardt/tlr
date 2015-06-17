@@ -13,18 +13,77 @@
 </div>
 
 <div class="row">
+  {% set api_url = request.protocol + "://" + request.host + "/api" + request.path %}
   <div class="col-sm-10 col-sm-offset-1">
-    <div class="alert alert-info" role="alert"><strong>Nothing to see yet.</strong> This page is still being developed.</div>
-
     {% if current_user == repo.user %}
+    <div class="alert alert-info" role="alert">
+      <h5><strong>You created this repository.</strong></h5>
+
+      <p>Here is how to get started:</p>
+
+      <p><ol>
+        <li>
+          In order to track your <em>linked data</em> resources through the Push API, you will first need to generate an API token.
+          You can do so <a href="{{ reverse_url("web:new-token") }}">by following this link</a>.
+          Copy the generated token right away as it will only be displayed once.
+        </li>
+        <li>
+          To authorize push access to your repository, we verify the secret token passed in the <code>Authorization</code> HTTP header of a request actually belongs to you.
+          You can revoke access granted by a token by deleting it on the <a href="{{ reverse_url("web:settings") }}">settings page</a>.
+        </li>
+        <li>
+          You can push new versions of your tracked resources through straight-forward HTTP requests.
+          Specify the original URI of the resource in the <code>key</code> query parameter.
+          You can supply an optional <code>datetime</code> value to say when the resource was changed or else the current server time will be used as a default.
+          <ul>
+            <li>A <code>PUT</code> request with the resource RDF description in the body will create a new revision of the resource.</li>
+            <li>A <code>DELETE</code> request marks an existing resource as, well, deleted.</li>
+          </ul>
+        </li>
+        <li>
+          An example of how to send requests from the command-line using <code>curl</code> is given below (<a href="http://explainshell.com/explain?cmd=curl+-X+PUT+-H+%22Authorization%3A+token+%24TOKEN%22+-H+%22Content-Type%3A+application%2Fn-triples%22+--data-binary+%40path%2Fto%2Fresource.nt+%22{{ url_escape(api_url + "?key=http://...&datetime=...") }}%22" target="_blank">explanation here</a>).
+        </li>
+      </ol></p>
+      <p>For more information on pushing data to a repository, please also refer to the official <a href="https://github.com/pmeinhardt/tlr#push-api">project readme</a>.</p>
+    </div>
+
+    <pre><code class="bash"># export the token for later use
+export TOKEN="0bc283..."<br>
+# create a new revision of a resource with an RDF description
+curl -X PUT \
+  -H "Authorization: token $TOKEN" \
+  -H "Content-Type: application/n-triples" \
+  --data-binary @path/to/resource.nt \
+  "{{ api_url }}?key=http://...&datetime=yyyy-MM-dd-HH:mm:ss"<br>
+# mark a resource as deleted
+curl -X DELETE \
+  -H "Authorization: token $TOKEN" \
+  "{{ api_url }}?key=http://...&datetime=..."</code></pre>
+
+    <hr>
+    {% end %}
+
     <div class="panel panel-default">
       <div class="panel-body">
-        <h4>Getting started</h4>
-        <p>Info on pushing data to the repository, see <a href="https://github.com/pmeinhardt/tailr#pushing-changes">https://github.com/pmeinhardt/tlr</a>.</p>
-        <p class="text-muted">TODO: Inline essential information here.</p>
+        <p>You can find links to a small sample of resources from this repository below:</p>
       </div>
+
+      <ul class="list-group">
+        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
+        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
+        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
+        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
+        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
+      </ul>
     </div>
-    {% end %}
   </div>
 </div>
+{% end %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/8.6.0/styles/github.min.css">
+
+<script src="https://cdn.jsdelivr.net/highlight.js/8.6.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/highlight.js/8.6.0/languages/bash.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
 {% end %}

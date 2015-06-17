@@ -192,6 +192,27 @@ body {
   }
 }
 
+/* syntax highlighting */
+
+.hljs {
+  background: none !important;
+}
+
+pre {
+  border-color: #dadada;
+  font-size: 11px;
+}
+
+code {
+  font-size: 84%;
+}
+
+pre > code {
+  overflow-x: auto;
+  word-wrap: normal;
+  white-space: pre;
+}
+
 /* homepage */
 
 .tlr-tease {
