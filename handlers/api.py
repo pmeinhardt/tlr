@@ -118,7 +118,7 @@ class RepoHandler(BaseHandler):
             # the time indicated by the passed `datetime` argument.
 
             self.set_header("Content-Type", "application/n-quads")
-            # self.set_header("Vary", "accept-datetime")
+            self.set_header("Vary", "accept-datetime")
 
             sha = shasum(key.encode("utf-8"))
 
@@ -149,10 +149,24 @@ class RepoHandler(BaseHandler):
                 # A resource does not exist for the given key.
                 raise HTTPError(404)
 
+            timegate_url = (self.request.protocol + "://" +
+                self.request.host + self.request.path)
+            timemap_url = (self.request.protocol + "://" +
+                self.request.host + self.request.uri + "&timemap=true")
+
+            self.set_header("Link",
+                '<%s>; rel="original"'
+                ', <%s>; rel="timegate"'
+                ', <%s>; rel="timemap"'
+                % (key, timegate_url, timemap_url))
+
+            self.set_header("Memento-Datetime",
+                chain[-1].time.strftime(RFC1123DATEFMT))
+
             if chain[0].type == CSet.DELETE:
                 # The last change was a delete. Return a 404 response with
                 # appropriate "Link" and "Memento-Datetime" headers.
-                raise HTTPError(404) # TODO
+                raise HTTPError(404)
 
             # Load the data required in order to restore the resource state.
             blobs = (Blob
@@ -219,6 +233,7 @@ class RepoHandler(BaseHandler):
                 '; type="application/n-quads"')
 
             self.set_header("Content-Type", "application/link-format")
+
             self.write('<' + key + '>; rel="original"')
             self.write(m.format(first.time.strftime(QSDATEFMT),
                 first.time.strftime(RFC1123DATEFMT)))
