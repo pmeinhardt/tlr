@@ -99,8 +99,14 @@ class RepoHandler(BaseHandler):
         if (index and timemap) or (index and key) or (timemap and not key):
             raise HTTPError(400)
 
-        datestr = self.get_query_argument("datetime", None)
-        ts = datestr and date(datestr, QSDATEFMT) or now()
+        if self.get_query_argument("datetime", None):
+            datestr = self.get_query_argument("datetime")
+            ts = date(datestr, QSDATEFMT)
+        elif "Accept-Datetime" in self.request.headers:
+            datestr = self.request.headers.get("Accept-Datetime")
+            ts = date(datestr, RFC1123DATEFMT)
+        else:
+            ts = now()
 
         try:
             repo = (Repo
