@@ -50,4 +50,4 @@ routes = [
 # GET   /api/:user/:repo?key=URI
 # GET   /api/:user/:repo?key=URI&datetime=DATETIME
 # GET   /api/:user/:repo?key=URI&timemap=true
-# GET   /api/:user/:repo?index=true
+# GET   /api/:user/:repo?index=true&page=1

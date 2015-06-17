@@ -7,7 +7,7 @@ import zlib
 
 from tornado.web import HTTPError, RequestHandler
 from tornado.escape import url_escape
-from peewee import IntegrityError, SQL
+from peewee import IntegrityError, SQL, fn
 import RDF
 
 from models import User, Token, Repo, HMap, CSet, Blob
@@ -32,6 +32,9 @@ def date(s, fmt):
 
 def now():
     return datetime.datetime.utcnow()
+
+# Pagination size for indexes (number of resource URIs per page)
+INDEX_PAGE_SIZE = 1000
 
 # This factor (among others) determines whether a snapshot is stored rather
 # than a delta, depending on the size of the latest snapshot and subsequent
@@ -251,19 +254,37 @@ class RepoHandler(BaseHandler):
             # Generate an index of all URIs contained in the dataset at the
             # provided point in time or in its current state.
 
-            # self.set_header("Vary", "accept-datetime")
+            self.set_header("Vary", "accept-datetime")
+            self.set_header("Content-Type", "text/plain")
 
-            # TODO Paginate! Filter? (See peewee's `.paginate()`)
+            page = int(self.get_query_argument("page", "1"))
 
-            # uris = (HMap
-            #     .select(HMap.val)
-            #     .join(CSet)
-            #     .where(
-            #         (CSet.repo == repo) &
-            #         (CSet.)
-            #     ))
+            # Subquery for selecting max. time per hkey group
+            mx = (CSet
+                .select(CSet.hkey, fn.Max(CSet.time).alias("maxtime"))
+                .where((CSet.repo == repo) & (CSet.time <= ts))
+                .group_by(CSet.hkey)
+                .order_by(CSet.hkey)
+                .paginate(1, INDEX_PAGE_SIZE)
+                .alias("mx"))
 
-            pass
+            # Query for all the relevant csets (those with max. time values)
+            cs = (CSet
+                .select(CSet.hkey, CSet.time)
+                .join(mx, on=(
+                    (CSet.hkey == mx.c.hkey_id) &
+                    (CSet.time == mx.c.maxtime)))
+                .where((CSet.repo == repo) & (CSet.type != CSet.DELETE))
+                .alias("cs"))
+
+            # Join with the hmap table to retrieve the plain key values
+            hm = (HMap
+                .select(HMap.val)
+                .join(cs, on=(HMap.sha == cs.c.hkey_id))
+                .naive())
+
+            for h in hm.iterator():
+                self.write(h.val + "\n")
         else:
             raise HTTPError(400)
 
