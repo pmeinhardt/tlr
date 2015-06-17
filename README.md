@@ -85,8 +85,13 @@ We can then launch a database container and one or more application containers l
 ```shell
 # start the database container
 docker run -d -e MYSQL_ROOT_PASSWORD=root -e MYSQL_USER=tailr -e MYSQL_PASSWORD=tailr -e MYSQL_DATABASE=tailr --name mariadb mariadb
+
+# run the database migration in a temporary application container (only important env variable is for the database here)
+docker run --rm -it --link mariadb:db -e COOKIE_SECRET=x -e GITHUB_CLIENT_ID=y -e GITHUB_SECRET=z -e DATABASE_URL=mysql://tailr:tailr@db/tailr pmeinhardt/tailr python prepare.py
+
 # run the application container, linking it to the db container and binding container port 5000 to port 8000 on 127.0.0.1 of the host machine
-docker run -d --link mariadb:db -e COOKIE_SECRET=secret -e DATABASE_URL=mysql://tailr:tailr@db/tailr -p 127.0.0.1:8000:5000 pmeinhardt/tailr
+# replace the dummy values for the GitHub access with the actual client-id and secret
+docker run -d --link mariadb:db -e COOKIE_SECRET=secret -e GITHUB_CLIENT_ID=xxx -e GITHUB_SECRET=xxx -e DATABASE_URL=mysql://tailr:tailr@db/tailr -p 127.0.0.1:8000:5000 pmeinhardt/tailr
 ```
 
 You can launch a number of application containers mapped to different ports on the host, e.g. 4 instances with ports `8000`-`8003`, and then configure an Apache or Nginx vhost as a reverse-proxy to these. This way, you can scale the web application layer simply by adding more containers and load-balancing between them.
@@ -130,12 +135,13 @@ server {
   }
 
   # Serve static files directly through nginx
-  location /static/ {
-    try_files $uri $uri/ =404;
-    if ($query_string) {
-      expires max;
-    }
-  }
+  # (not applicable when running out of a container)
+  # location /static/ {
+  #   try_files $uri $uri/ =404;
+  #   if ($query_string) {
+  #     expires max;
+  #   }
+  # }
 
   # Reverse proxy to application
   location / {
