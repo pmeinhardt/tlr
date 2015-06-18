@@ -60,9 +60,14 @@ def decompress(s):
 def shasum(s):
     return hashlib.sha1(s).digest()
 
+# Parse serialized RDF:
+#
+# RDF/XML:      application/rdf+xml
+# N-Triples:    application/n-triples
+# Turtle:       text/turtle
 def parse(s, fmt):
     stmts = set()
-    parser = RDF.Parser(name="ntriples")
+    parser = RDF.Parser(mime_type=fmt)
     for st in parser.parse_string_as_stream(s, "urn:x-default:tailr"):
         stmts.add(str(st) + " .")
     return stmts
@@ -292,7 +297,7 @@ class RepoHandler(BaseHandler):
     def put(self, username, reponame):
         # Create a new revision of the resource specified by `key`.
 
-        fmt = self.request.headers["Content-Type"]
+        fmt = self.request.headers.get("Content-Type", "application/n-triples")
         key = self.get_query_argument("key", None)
 
         if username != self.current_user.name:

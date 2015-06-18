@@ -40,9 +40,10 @@
               <li>A <code>PUT</code> request with the resource RDF description in the body will create a new revision of the resource.</li>
               <li>A <code>DELETE</code> request marks an existing resource as, well, deleted.</li>
             </ul>
+            Acceptable <code>Content-Type</code> values are <code>application/rdf+xml</code>, <code>application/n-triples</code> and <code>text/turtle</code>.
           </li>
           <li>
-            An example of how to send requests from the command-line using <code>curl</code> is given below (<a href="http://explainshell.com/explain?cmd=curl+-X+PUT+-H+%22Authorization%3A+token+%24TOKEN%22+-H+%22Content-Type%3A+application%2Fn-triples%22+--data-binary+%40path%2Fto%2Fresource.nt+%22{{ url_escape(api_url + "?key=http://...&datetime=...") }}%22" target="_blank">explanation here</a>).
+            An example of how to send requests from the command-line using <code>curl</code> is given below (<a href="http://explainshell.com/explain?cmd=curl+-X+PUT+-H+%22Authorization%3A+token+%24TOKEN%22+-H+%22Content-Type%3A+application%2Fn-triples%22+--data-binary+%40path%2Fto%2Fresource.nt+%22{{ url_escape(api_url + "?key=http://...&datetime=...") }}%22" target="_blank">explanation here</a>).<br>
           </li>
         </ol>
       </p>
