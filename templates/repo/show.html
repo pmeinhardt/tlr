@@ -1,5 +1,9 @@
 {% extends "../base.html" %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/8.6.0/styles/github.min.css">
+{% end %}
+
 {% block content %}
 <div class="row">
   <div class="col-sm-10 col-sm-offset-1">
@@ -100,8 +104,6 @@ curl -X DELETE \
 {% end %}
 
 {% block scripts %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/highlight.js/8.6.0/styles/github.min.css">
-
 <script src="https://cdn.jsdelivr.net/highlight.js/8.6.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/highlight.js/8.6.0/languages/bash.min.js"></script>
 <script>hljs.initHighlightingOnLoad();</script>
