@@ -17,6 +17,7 @@
 </div>
 
 <div class="row">
+  {% set base_url = request.protocol + "://" + request.host + request.path %}
   {% set api_url = request.protocol + "://" + request.host + "/api" + request.path %}
   <div class="col-sm-10 col-sm-offset-1">
     {% if current_user == repo.user %}
@@ -94,7 +95,7 @@ curl -X DELETE \
       {% if len(samples) > 0 %}
       <ul class="list-group">
         {% for s in samples %}
-        <li class="list-group-item"><a href="{{ api_url + "?key=" + s.val }}">{{ s.val }}</a></li>
+        <li class="list-group-item"><a href="{{ base_url + "?key=" + s.val + "&timemap=true" }}">{{ s.val }}</a></li>
         {% end %}
       </ul>
       {% end %}

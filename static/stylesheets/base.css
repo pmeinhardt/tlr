@@ -213,6 +213,18 @@ pre > code {
   white-space: pre;
 }
 
+/* spinner */
+
+.repo-spinner {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.repo-spinner .sk-double-bounce1,
+.repo-spinner .sk-double-bounce2 {
+  background-color: #ddd !important;
+}
+
 /* homepage */
 
 .tlr-tease {

@@ -1,0 +1,57 @@
+{% extends "../base.html" %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/spinkit/1.0.1/spinkit.css">
+{% end %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1">
+    <div class="masthead">
+      <div class="repo-head">
+        <h1 class="repo-title"><a href="{{ reverse_url("web:user", repo.user.name) }}" class="repo-title-username">{{ repo.user.name }}</a><span class="path-divider">/</span><a href="{{ reverse_url("web:repo", repo.user.name, repo.name) }}" class="repo-title-reponame">{{ repo.name }}</a> <span class="mega-octicon octicon-repo repo-icon"></span></h1>
+        <p class="text-muted">{{ repo.desc }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-sm-10 col-sm-offset-1" id="hist-target">
+    <div class="sk-spinner sk-spinner-double-bounce repo-spinner">
+      <div class="sk-double-bounce1"></div>
+      <div class="sk-double-bounce2"></div>
+    </div>
+  </div>
+</div>
+{% end %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/momentjs/2.10.3/moment.min.js"></script>
+
+  {% set api_url = request.protocol + "://" + request.host + "/api" + request.path %}
+  <script>
+    $(function () {
+      $.get('{{ api_url }}?key={{ key }}&timemap=true', function (res) {
+        var mementos, $panel, $hist, $el, mmt;
+
+        mementos = res.mementos.list;
+
+        $panel = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><span class="octicon octicon-clock pull-right"></span> {{ key }}</h4></div></div>');
+        $hist = $('<div class="list-group"></div>');
+
+        mementos.forEach(function (m) {
+          mmt = moment(m.datetime);
+          $el = $('<a href="" class="list-group-item"></a>');
+          $el.append(mmt.format('ddd, D MMM YYYY HH:mm:ss'));
+          $el.append('<span class="pull-right text-muted">' + mmt.fromNow() + '</span>');
+          $el.attr('href', m.uri);
+          $hist.append($el);
+        });
+
+        $panel.append($hist);
+        $('#hist-target').html($panel);
+      });
+    });
+  </script>
+{% end %}

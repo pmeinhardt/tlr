@@ -88,13 +88,23 @@ class RepoHandler(BaseHandler):
             repo = (Repo.select().join(User).alias("user")
                 .where((User.name == username) & (Repo.name == reponame))
                 .get())
-            cs = (CSet.select(fn.distinct(CSet.hkey))
-                .where(CSet.repo == repo).limit(5).alias("cs"))
-            samples = (HMap.select(HMap.val)
-                .join(cs, on=(HMap.sha == cs.c.hkey_id)))
             title = repo.user.name + "/" + repo.name
-            self.render("repo/show.html", title=title, repo=repo,
-                samples=list(samples))
+
+            timemap = self.get_query_argument("timemap", "false") == "true"
+            datetime = self.get_query_argument("datetime", None)
+            key = self.get_query_argument("key", None)
+
+            if key and not timemap:
+                self.render("repo/memento.html", repo=repo, key=key)
+            elif key and timemap:
+                self.render("repo/history.html", repo=repo, key=key)
+            else:
+                cs = (CSet.select(fn.distinct(CSet.hkey))
+                    .where(CSet.repo == repo).limit(5).alias("cs"))
+                samples = (HMap.select(HMap.val)
+                    .join(cs, on=(HMap.sha == cs.c.hkey_id)))
+                self.render("repo/show.html", title=title, repo=repo,
+                    samples=list(samples))
         except Repo.DoesNotExist:
             raise HTTPError(404)
 
