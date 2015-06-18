@@ -6,7 +6,7 @@ import time
 import zlib
 
 from tornado.web import HTTPError, RequestHandler
-from tornado.escape import url_escape
+from tornado.escape import url_escape, json_encode
 from peewee import IntegrityError, SQL, fn
 import RDF
 
@@ -217,7 +217,8 @@ class RepoHandler(BaseHandler):
             self.write(join(stmts, "\n"))
         elif key and timemap:
             # Generate a timemap containing historic change information
-            # for the requested key.
+            # for the requested key. The timemap is in the default link-format
+            # or as JSON (http://mementoweb.org/guide/timemap-json/).
 
             sha = shasum(key.encode("utf-8"))
 
@@ -227,7 +228,6 @@ class RepoHandler(BaseHandler):
                 .order_by(CSet.time.desc())
                 .naive())
 
-            # Serialize into Link format
             # TODO: Paginate?
 
             csit = csets.iterator()
@@ -241,20 +241,43 @@ class RepoHandler(BaseHandler):
             req = self.request
             base = req.protocol + "://" + req.host + req.path
 
-            m = (',\n<' + base + '?key=' + url_escape(key) + '&datetime={0}>'
-                '; rel="memento"'
-                '; datetime="{1}"'
-                '; type="application/n-quads"')
+            accept = self.request.headers.get("Accept", "")
 
-            self.set_header("Content-Type", "application/link-format")
+            if "application/json" in accept or "*/*" in accept:
+                self.set_header("Content-Type", "application/json")
 
-            self.write('<' + key + '>; rel="original"')
-            self.write(m.format(first.time.strftime(QSDATEFMT),
-                first.time.strftime(RFC1123DATEFMT)))
+                self.write('{"original_uri": ' + json_encode(key))
+                self.write(', "mementos": {"list":[')
 
-            for cs in csit:
-                self.write(m.format(cs.time.strftime(QSDATEFMT),
-                    cs.time.strftime(RFC1123DATEFMT)))
+                m = ('{{"datetime": "{0}", "uri": "' + base + '?key=' +
+                    url_escape(key) +
+                    '&datetime={1}"}}')
+
+                self.write(m.format(first.time.isoformat(),
+                    first.time.strftime(QSDATEFMT)))
+
+                for cs in csit:
+                    self.write(', ' + m.format(cs.time.isoformat(),
+                        cs.time.strftime(QSDATEFMT)))
+
+                self.write(']}')
+                self.write('}')
+            else:
+                m = (',\n'
+                    '<' + base + '?key=' + url_escape(key) + '&datetime={0}>'
+                    '; rel="memento"'
+                    '; datetime="{1}"'
+                    '; type="application/n-quads"')
+
+                self.set_header("Content-Type", "application/link-format")
+
+                self.write('<' + key + '>; rel="original"')
+                self.write(m.format(first.time.strftime(QSDATEFMT),
+                    first.time.strftime(RFC1123DATEFMT)))
+
+                for cs in csit:
+                    self.write(m.format(cs.time.strftime(QSDATEFMT),
+                        cs.time.strftime(RFC1123DATEFMT)))
         elif index:
             # Generate an index of all URIs contained in the dataset at the
             # provided point in time or in its current state.
