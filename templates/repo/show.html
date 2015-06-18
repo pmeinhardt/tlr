@@ -77,6 +77,8 @@ curl -X DELETE \
         <pre><code class="bash">curl -H "Accept-Datetime: Thu, 11 June 2015 09:45 GMT" "{{ api_url }}?key=http://..."</code></pre>
         <p>In order to link to a certain resource state, you may also provide the datetime argument as a query parameter:</p>
         <pre><code class="bash">curl "{{ api_url }}?key=http://...&datetime=2015-06-11-09:45:00"</code></pre>
+        <p>To find out when a resource was changed, query for the timemap:</p>
+        <pre><code class="bash">curl "{{ api_url }}?key=http://...&timemap=true"</code></pre>
         {% if len(samples) > 0 %}
         <p>You can find links to a small sample of resources from this repository below:</p>
         {% else %}
