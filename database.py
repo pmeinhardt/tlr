@@ -1,4 +1,5 @@
 from peewee import MySQLDatabase, Field, DateTimeField, IntegerField, SQL
+from playhouse.pool import PooledDatabase
 
 class MSQLBinaryField(Field):
     db_field = "binary"
@@ -97,3 +98,17 @@ MDB.register_fields({
     "enum": "ENUM",
     "timestamp": "TIMESTAMP",
 })
+
+# Adapted from playhouse PooledMySQLDatabase:
+class PooledMDB(PooledDatabase, MDB):
+    def _is_closed(self, key, conn):
+        is_closed = super(PooledMDB, self)._is_closed(key, conn)
+        if not is_closed:
+            if hasattr(conn, 'open'):
+                is_closed = not bool(conn.open)
+            else:
+                try:
+                    is_closed = not conn.ping(False)
+                except:
+                    is_closed = True
+        return is_closed

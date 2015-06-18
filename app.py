@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from database import MDB as Database
+from database import PooledMDB as Database
 
 import tornado.httpserver
 import tornado.ioloop
