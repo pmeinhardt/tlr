@@ -12,7 +12,9 @@ from tornado.web import authenticated
 
 import peewee
 
-from models import User, Repo, Token
+from peewee import fn
+
+from models import User, Repo, HMap, CSet, Token
 
 class BaseHandler(RequestHandler):
     """Base class for all web front end handlers."""
@@ -86,8 +88,13 @@ class RepoHandler(BaseHandler):
             repo = (Repo.select().join(User).alias("user")
                 .where((User.name == username) & (Repo.name == reponame))
                 .get())
+            cs = (CSet.select(fn.distinct(CSet.hkey))
+                .where(CSet.repo == repo).limit(5).alias("cs"))
+            samples = (HMap.select(HMap.val)
+                .join(cs, on=(HMap.sha == cs.c.hkey_id)))
             title = repo.user.name + "/" + repo.name
-            self.render("repo/show.html", title=title, repo=repo)
+            self.render("repo/show.html", title=title, repo=repo,
+                samples=list(samples))
         except Repo.DoesNotExist:
             raise HTTPError(404)
 

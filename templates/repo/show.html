@@ -21,29 +21,32 @@
 
       <p>Here is how to get started:</p>
 
-      <p><ol>
-        <li>
-          In order to track your <em>linked data</em> resources through the Push API, you will first need to generate an API token.
-          You can do so <a href="{{ reverse_url("web:new-token") }}">by following this link</a>.
-          Copy the generated token right away as it will only be displayed once.
-        </li>
-        <li>
-          To authorize push access to your repository, we verify the secret token passed in the <code>Authorization</code> HTTP header of a request actually belongs to you.
-          You can revoke access granted by a token by deleting it on the <a href="{{ reverse_url("web:settings") }}">settings page</a>.
-        </li>
-        <li>
-          You can push new versions of your tracked resources through straight-forward HTTP requests.
-          Specify the original URI of the resource in the <code>key</code> query parameter.
-          You can supply an optional <code>datetime</code> value to say when the resource was changed or else the current server time will be used as a default.
-          <ul>
-            <li>A <code>PUT</code> request with the resource RDF description in the body will create a new revision of the resource.</li>
-            <li>A <code>DELETE</code> request marks an existing resource as, well, deleted.</li>
-          </ul>
-        </li>
-        <li>
-          An example of how to send requests from the command-line using <code>curl</code> is given below (<a href="http://explainshell.com/explain?cmd=curl+-X+PUT+-H+%22Authorization%3A+token+%24TOKEN%22+-H+%22Content-Type%3A+application%2Fn-triples%22+--data-binary+%40path%2Fto%2Fresource.nt+%22{{ url_escape(api_url + "?key=http://...&datetime=...") }}%22" target="_blank">explanation here</a>).
-        </li>
-      </ol></p>
+      <p>
+        <ol>
+          <li>
+            In order to track your <em>linked data</em> resources through the Push API, you will first need to generate an API token.
+            You can do so <a href="{{ reverse_url("web:new-token") }}">by following this link</a>.
+            Copy the generated token right away as it will only be displayed once.
+          </li>
+          <li>
+            To authorize push access to your repository, we verify the secret token passed in the <code>Authorization</code> HTTP header of a request actually belongs to you.
+            You can revoke access granted by a token by deleting it on the <a href="{{ reverse_url("web:settings") }}">settings page</a>.
+          </li>
+          <li>
+            You can push new versions of your tracked resources through straight-forward HTTP requests.
+            Specify the original URI of the resource in the <code>key</code> query parameter.
+            You can supply an optional <code>datetime</code> value to say when the resource was changed or else the current server time will be used as a default.
+            <ul>
+              <li>A <code>PUT</code> request with the resource RDF description in the body will create a new revision of the resource.</li>
+              <li>A <code>DELETE</code> request marks an existing resource as, well, deleted.</li>
+            </ul>
+          </li>
+          <li>
+            An example of how to send requests from the command-line using <code>curl</code> is given below (<a href="http://explainshell.com/explain?cmd=curl+-X+PUT+-H+%22Authorization%3A+token+%24TOKEN%22+-H+%22Content-Type%3A+application%2Fn-triples%22+--data-binary+%40path%2Fto%2Fresource.nt+%22{{ url_escape(api_url + "?key=http://...&datetime=...") }}%22" target="_blank">explanation here</a>).
+          </li>
+        </ol>
+      </p>
+
       <p>For more information on pushing data to a repository, please also refer to the official <a href="https://github.com/pmeinhardt/tlr#push-api">project readme</a>.</p>
     </div>
 
@@ -65,16 +68,29 @@ curl -X DELETE \
 
     <div class="panel panel-default">
       <div class="panel-body">
+        <h4>Reading resource states from {{ repo.name }}</h4>
+        <p>Prior states of <em>linked data</em> resources tracked in this repository are accessible through a <a href="https://datatracker.ietf.org/doc/rfc7089/">Memento</a> API.</p>
+        <p>
+          You can request a certain resource from this repository by specifying its URI in the <code>key</code> query parameter.
+          Specify the date and time for the resource state you are interested in by passing an <code>Accept-Datetime</code> HTTP header, for instance:
+        </p>
+        <pre><code class="bash">curl -H "Accept-Datetime: Thu, 11 June 2015 09:45 GMT" "{{ api_url }}?key=http://..."</code></pre>
+        <p>In order to link to a certain resource state, you may also provide the datetime argument as a query parameter:</p>
+        <pre><code class="bash">curl "{{ api_url }}?key=http://...&datetime=2015-06-11-09:45:00"</code></pre>
+        {% if len(samples) > 0 %}
         <p>You can find links to a small sample of resources from this repository below:</p>
+        {% else %}
+        <p><small><strong>This repository is still empty.</strong></small></p>
+        {% end %}
       </div>
 
+      {% if len(samples) > 0 %}
       <ul class="list-group">
-        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
-        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
-        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
-        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
-        <li class="list-group-item"><a href="http://dbpedia.org/resource/Paris">http://dbpedia.org/resource/Paris</a></li>
+        {% for s in samples %}
+        <li class="list-group-item"><a href="{{ api_url + "?key=" + s.val }}">{{ s.val }}</a></li>
+        {% end %}
       </ul>
+      {% end %}
     </div>
   </div>
 </div>
