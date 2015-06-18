@@ -95,7 +95,8 @@ class RepoHandler(BaseHandler):
             key = self.get_query_argument("key", None)
 
             if key and not timemap:
-                self.render("repo/memento.html", repo=repo, key=key)
+                self.render("repo/memento.html", repo=repo, key=key,
+                    datetime=datetime)
             elif key and timemap:
                 self.render("repo/history.html", repo=repo, key=key)
             else:

@@ -17,7 +17,7 @@
 </div>
 
 <div class="row">
-  <div class="col-sm-10 col-sm-offset-1" id="hist-target">
+  <div class="col-sm-10 col-sm-offset-1" id="mm-target">
     <div class="sk-spinner sk-spinner-double-bounce repo-spinner">
       <div class="sk-double-bounce1"></div>
       <div class="sk-double-bounce2"></div>
@@ -28,29 +28,28 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/momentjs/2.10.3/moment.min.js"></script>
+<!-- <script src="{{ static_url("javascripts/nquads.js") }}"></script> -->
 
 {% set api_url = request.protocol + "://" + request.host + "/api" + request.path %}
 <script>
   $(function () {
-    $.get('{{ api_url }}?key={{ key }}&timemap=true', function (res) {
-      var mementos, $panel, $hist, $el, mmt;
+    $.get('{{ api_url }}?key={{ key }}&datetime={{ datetime }}', function (res) {
+      var $viewer, $pre, $code, isodate, mmt;
 
-      mementos = res.mementos.list;
+      isodate = '{{ datetime }}';
+      isodate = isodate.substr(0, 10) + ' ' + isodate.substr(11);
+      mmt = moment(isodate);
 
-      $panel = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title"><span class="octicon octicon-clock pull-right"></span> {{ key }}</h4></div></div>');
-      $hist = $('<div class="list-group"></div>');
+      $viewer = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title">{{ key }}</h4></div></div>');
+      $viewer.append('<div class="panel-body"><small>on ' + mmt.format('LLL') + '<span class="pull-right text-muted">' + mmt.fromNow() + '</span></small></div>');
+      $code = $('<code></code>');
+      $code.text(res.split('\n').sort().join('\n'));
 
-      mementos.forEach(function (m) {
-        mmt = moment(m.datetime);
-        $el = $('<a href="" class="list-group-item"></a>');
-        $el.append(mmt.format('ddd, D MMM YYYY HH:mm:ss'));
-        $el.append('<span class="pull-right text-muted">' + mmt.fromNow() + '</span>');
-        $el.attr('href', m.uri.replace('/api', ''));
-        $hist.append($el);
-      });
+      $pre = $('<pre class="nq-view"></pre>');
+      $pre.append($code);
 
-      $panel.append($hist);
-      $('#hist-target').html($panel);
+      $viewer.append($pre);
+      $('#mm-target').html($viewer);
     });
   });
 </script>

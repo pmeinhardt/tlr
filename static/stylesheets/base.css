@@ -337,79 +337,10 @@ pre > code {
   font-weight: bold;
 }
 
-/* tree listing */
-
-.tree-listing {
-  font-size: 13px;
-}
-
-/* file viewer */
-
-.file-viewer pre code {
-  word-wrap: normal;
-  white-space: pre;
-  overflow: auto;
-}
-
-/* commit listing */
-
-.commits-listing {
-  margin-top: 40px;
-  margin-bottom: 30px;
-  padding-top: 18px;
-  position: relative;
-  padding-left: 40px;
-}
-
-.commits-listing:before {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 12px;
-  z-index: -1;
-  display: block;
-  width: 2px;
-  content: "";
-  background-color: #f3f3f3;
-}
-
-.commit-item {}
-
-.commit-point {
-  margin-left: -34px;
-  line-height: 16px;
-  background-color: #fff;
-  color: #ccc;
-}
-
-.commit-group {
-  background: #fff;
-  margin-top: -34px;
-  margin-bottom: 34px;
-  padding: 8px 10px;
-  border: 1px solid #e5e5e5;
-  font-size: 12px;
-  line-height: 1.2;
-}
-
-.commit-actions {
-  margin-top: 2px;
-}
-
-.commit-info {
-  color: #999;
-}
-
-.commit-title {
-  margin-top: 0;
-  margin-bottom: 5px;
-  color: #000;
-}
-
-.commit-add {
-  color: #6cc644;
-}
-
-.commit-del {
-  color: #bd2c00;
+pre.nq-view {
+  background: none;
+  border-radius: 0;
+  border-width: 1px 0 0;
+  margin: 0;
+  font-size: .9em;
 }
