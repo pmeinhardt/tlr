@@ -7,7 +7,7 @@ import tornado.gen
 import tornado.httpclient
 import tornado.web
 
-from tornado.web import HTTPError, RequestHandler
+from tornado.web import HTTPError
 from tornado.web import authenticated
 
 import peewee
@@ -15,6 +15,7 @@ import peewee
 from peewee import fn
 
 from models import User, Repo, HMap, CSet, Token
+from handlers import RequestHandler
 
 class BaseHandler(RequestHandler):
     """Base class for all web front end handlers."""

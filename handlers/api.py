@@ -5,12 +5,13 @@ import string
 import time
 import zlib
 
-from tornado.web import HTTPError, RequestHandler
+from tornado.web import HTTPError
 from tornado.escape import url_escape, json_encode
 from peewee import IntegrityError, SQL, fn
 import RDF
 
 from models import User, Token, Repo, HMap, CSet, Blob
+from handlers import RequestHandler
 
 def authenticated(method):
     """Decorate API methods to require user authentication via token."""
