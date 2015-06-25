@@ -20,7 +20,7 @@ class Application(tornado.web.Application):
     def __init__(self, dbconf, bsconf, handlers=None, **settings):
         super(Application, self).__init__(handlers, **settings)
         self.blobstore = None # Blobstore(bsconf.nodes, **bsconf.opts)
-        self.database = Database(**dbconf)
+        self.database = Database(stale_timeout=599, **dbconf)
 
 if __name__ == "__main__":
     tornado.options.parse_command_line()

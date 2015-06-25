@@ -139,6 +139,7 @@ class SettingsHandler(BaseHandler):
     def on_finish(self):
         q = Token.update(seen=True).where(Token.user == self.current_user)
         q.execute()
+        super(SettingsHandler, self).on_finish()
 
 class NewTokenHandler(BaseHandler):
     @authenticated
@@ -344,6 +345,7 @@ class ErrorHandler(BaseHandler):
         self.set_status(status_code)
 
     def prepare(self):
+        super(ErrorHandler, self).prepare()
         raise tornado.web.HTTPError(self.get_status())
 
     def check_xsrf_cookie(self):
