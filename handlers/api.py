@@ -294,7 +294,7 @@ class RepoHandler(BaseHandler):
                 .where((CSet.repo == repo) & (CSet.time <= ts))
                 .group_by(CSet.hkey)
                 .order_by(CSet.hkey)
-                .paginate(1, INDEX_PAGE_SIZE)
+                .paginate(page, INDEX_PAGE_SIZE)
                 .alias("mx"))
 
             # Query for all the relevant csets (those with max. time values)
