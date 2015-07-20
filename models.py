@@ -59,7 +59,7 @@ class Blob(Base):
     repo = ForeignKeyField(Repo, related_name="blobs", null=False)
     hkey = ForeignKeyField(HMap, null=False)
     time = MSQLTimestampField(precision=0, null=False)
-    data = BlobField()
+    data = MSQLMediumBlobField()
 
     class Meta:
         primary_key = CompositeKey("repo", "hkey", "time")

@@ -1,4 +1,5 @@
-from peewee import MySQLDatabase, Field, DateTimeField, IntegerField, SQL
+from peewee import MySQLDatabase, SQL
+from peewee import Field, BlobField, DateTimeField, IntegerField
 from playhouse.pool import PooledDatabase
 
 class MSQLBinaryField(Field):
@@ -88,6 +89,12 @@ class MSQLEnumField(Field):
     def db_value(self, value):
         return "'{0}'".format(value)
 
+class MSQLMediumBlobField(BlobField):
+    db_field = "mediumblob"
+
+class MSQLLongBlobField(BlobField):
+    db_field = "longblob"
+
 class MDB(MySQLDatabase): pass
 
 MDB.register_fields({
@@ -97,6 +104,8 @@ MDB.register_fields({
     "mediumint": "MEDIUMINT",
     "enum": "ENUM",
     "timestamp": "TIMESTAMP",
+    "mediumblob": "MEDIUMBLOB",
+    "longblob": "LONGBLOB",
 })
 
 # Adapted from playhouse PooledMySQLDatabase:
