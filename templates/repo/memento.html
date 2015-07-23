@@ -33,12 +33,10 @@
 {% set api_url = request.protocol + "://" + request.host + "/api" + request.path %}
 <script>
   $(function () {
-    $.get('{{ api_url }}?key={{ key }}&datetime={{ datetime }}', function (res) {
-      var $viewer, $pre, $code, isodate, mmt;
+    $.get('{{ api_url }}', function (res) {
+      var $viewer, $pre, $code, mmt;
 
-      isodate = '{{ datetime }}';
-      isodate = isodate.substr(0, 10) + ' ' + isodate.substr(11);
-      mmt = moment(isodate);
+      mmt = moment('{{ datestr }}', 'YYYYMMDDHHmmss');
 
       $viewer = $('<div class="panel panel-default"><div class="panel-heading"><h4 class="panel-title">{{ key }}</h4></div></div>');
       $viewer.append('<div class="panel-body"><small>on ' + mmt.format('LLL') + '<span class="pull-right text-muted">' + mmt.fromNow() + '</span></small></div>');

@@ -22,6 +22,9 @@ def authenticated(method):
         return method(self, *args, **kwargs)
     return wrapper
 
+# Path component date format, e.g. `.../20150511165621/...`
+PCDATEFMT = "%Y%m%d%H%M%S"
+
 # Query string date format, e.g. `...?datetime=2015-05-11-16:56:21`
 QSDATEFMT = "%Y-%m-%d-%H:%M:%S"
 
@@ -94,28 +97,10 @@ class BaseHandler(RequestHandler):
     def check_xsrf_cookie(self):
         pass
 
-class RepoHandler(BaseHandler):
-    """Processes repository calls: Push, timegate, memento, timemap etc."""
-
-    # def head(self, username, reponame):
-    #     pass
-
-    def get(self, username, reponame):
-        timemap = self.get_query_argument("timemap", "false") == "true"
-        index = self.get_query_argument("index", "false") == "true"
-        key = self.get_query_argument("key", None)
-
-        if (index and timemap) or (index and key) or (timemap and not key):
-            raise HTTPError(400)
-
-        if self.get_query_argument("datetime", None):
-            datestr = self.get_query_argument("datetime")
-            ts = date(datestr, QSDATEFMT)
-        elif "Accept-Datetime" in self.request.headers:
-            datestr = self.request.headers.get("Accept-Datetime")
-            ts = date(datestr, RFC1123DATEFMT)
-        else:
-            ts = now()
+    def _memento(self, username, reponame, key, ts=None, **kwargs):
+        # Recreate the resource for the given key in its latest state -
+        # if no `datetime` was provided - or in the state it was in at
+        # the time indicated by the passed `datetime` argument.
 
         try:
             repo = (Repo
@@ -127,202 +112,240 @@ class RepoHandler(BaseHandler):
         except Repo.DoesNotExist:
             raise HTTPError(404)
 
-        if key and not timemap:
-            # Recreate the resource for the given key in its latest state -
-            # if no `datetime` was provided - or in the state it was in at
-            # the time indicated by the passed `datetime` argument.
+        sha = shasum(key.encode("utf-8"))
 
-            self.set_header("Content-Type", "application/n-quads")
+        if ts is None:
             self.set_header("Vary", "accept-datetime")
+            ts = now()
 
-            sha = shasum(key.encode("utf-8"))
+        self.set_header("Content-Type", "application/n-quads")
 
-            # Fetch all relevant changes from the last "non-delta" onwards,
-            # ordered by time. The returned delta-chain consists of either:
-            # a snapshot followed by 0 or more deltas, or
-            # a single delete.
-            chain = list(CSet
-                .select(CSet.time, CSet.type)
-                .where(
-                    (CSet.repo == repo) &
-                    (CSet.hkey == sha) &
-                    (CSet.time <= ts) &
-                    (CSet.time >= SQL(
-                        "COALESCE((SELECT time FROM cset "
-                        "WHERE repo_id = %s "
-                        "AND hkey_id = %s "
-                        "AND time <= %s "
-                        "AND type != %s "
-                        "ORDER BY time DESC "
-                        "LIMIT 1), 0)",
-                        repo.id, sha, ts, CSet.DELTA
-                    )))
-                .order_by(CSet.time)
-                .naive())
+        # Fetch all relevant changes from the last "non-delta" onwards,
+        # ordered by time. The returned delta-chain consists of either:
+        # a snapshot followed by 0 or more deltas, or
+        # a single delete.
+        chain = list(CSet
+            .select(CSet.time, CSet.type)
+            .where(
+                (CSet.repo == repo) &
+                (CSet.hkey == sha) &
+                (CSet.time <= ts) &
+                (CSet.time >= SQL(
+                    "COALESCE((SELECT time FROM cset "
+                    "WHERE repo_id = %s "
+                    "AND hkey_id = %s "
+                    "AND time <= %s "
+                    "AND type != %s "
+                    "ORDER BY time DESC "
+                    "LIMIT 1), 0)",
+                    repo.id, sha, ts, CSet.DELTA
+                )))
+            .order_by(CSet.time)
+            .naive())
 
-            if len(chain) == 0:
-                # A resource does not exist for the given key.
-                raise HTTPError(404)
+        if len(chain) == 0:
+            # A resource does not exist for the given key.
+            raise HTTPError(404)
 
-            timegate_url = (self.request.protocol + "://" +
-                self.request.host + self.request.path)
-            timemap_url = (self.request.protocol + "://" +
-                self.request.host + self.request.uri + "&timemap=true")
+        timegate_url = (self.request.protocol + "://" +
+            self.request.host + self.request.path)
+        timemap_url = (self.request.protocol + "://" + self.request.host +
+            self.reverse_url("api:timemap", username, reponame, key))
 
-            self.set_header("Link",
-                '<%s>; rel="original"'
-                ', <%s>; rel="timegate"'
-                ', <%s>; rel="timemap"'
-                % (key, timegate_url, timemap_url))
+        self.set_header("Link",
+            '<%s>; rel="original"'
+            ', <%s>; rel="timegate"'
+            ', <%s>; rel="timemap"'
+            % (key, timegate_url, timemap_url))
 
-            self.set_header("Memento-Datetime",
-                chain[-1].time.strftime(RFC1123DATEFMT))
+        self.set_header("Memento-Datetime",
+            chain[-1].time.strftime(RFC1123DATEFMT))
 
-            if chain[0].type == CSet.DELETE:
-                # The last change was a delete. Return a 404 response with
-                # appropriate "Link" and "Memento-Datetime" headers.
-                raise HTTPError(404)
+        if chain[0].type == CSet.DELETE:
+            # The last change was a delete. Return a 404 response with
+            # appropriate "Link" and "Memento-Datetime" headers.
+            raise HTTPError(404)
 
-            # Load the data required in order to restore the resource state.
-            blobs = (Blob
-                .select(Blob.data)
-                .where(
-                    (Blob.repo == repo) &
-                    (Blob.hkey == sha) &
-                    (Blob.time << map(lambda e: e.time, chain)))
-                .order_by(Blob.time)
-                .naive())
+        # Load the data required in order to restore the resource state.
+        blobs = (Blob
+            .select(Blob.data)
+            .where(
+                (Blob.repo == repo) &
+                (Blob.hkey == sha) &
+                (Blob.time << map(lambda e: e.time, chain)))
+            .order_by(Blob.time)
+            .naive())
 
-            if len(chain) == 1:
-                # Special case, where we can simply return
-                # the blob data of the snapshot.
-                snap = blobs.first().data
-                return self.finish(decompress(snap))
+        if len(chain) == 1:
+            # Special case, where we can simply return
+            # the blob data of the snapshot.
+            snap = blobs.first().data
+            return self.finish(decompress(snap))
 
-            stmts = set()
+        stmts = set()
 
-            for i, blob in enumerate(blobs.iterator()):
-                data = decompress(blob.data)
+        for i, blob in enumerate(blobs.iterator()):
+            data = decompress(blob.data)
 
-                if i == 0:
-                    # Base snapshot for the delta chain
-                    stmts.update(data.splitlines())
-                else:
-                    for line in data.splitlines():
-                        mode, stmt = line[0], line[2:]
-                        if mode == "A":
-                            stmts.add(stmt)
-                        else:
-                            stmts.discard(stmt)
-
-            self.write(join(stmts, "\n"))
-        elif key and timemap:
-            # Generate a timemap containing historic change information
-            # for the requested key. The timemap is in the default link-format
-            # or as JSON (http://mementoweb.org/guide/timemap-json/).
-
-            sha = shasum(key.encode("utf-8"))
-
-            csets = (CSet
-                .select(CSet.time)
-                .where((CSet.repo == repo) & (CSet.hkey == sha))
-                .order_by(CSet.time.desc())
-                .naive())
-
-            # TODO: Paginate?
-
-            csit = csets.iterator()
-
-            try:
-                first = csit.next()
-            except StopIteration:
-                # Resource for given key does not exist.
-                raise HTTPError(404)
-
-            req = self.request
-            base = req.protocol + "://" + req.host + req.path
-
-            accept = self.request.headers.get("Accept", "")
-
-            if "application/json" in accept or "*/*" in accept:
-                self.set_header("Content-Type", "application/json")
-
-                self.write('{"original_uri": ' + json_encode(key))
-                self.write(', "mementos": {"list":[')
-
-                m = ('{{"datetime": "{0}", "uri": "' + base + '?key=' +
-                    url_escape(key) +
-                    '&datetime={1}"}}')
-
-                self.write(m.format(first.time.isoformat(),
-                    first.time.strftime(QSDATEFMT)))
-
-                for cs in csit:
-                    self.write(', ' + m.format(cs.time.isoformat(),
-                        cs.time.strftime(QSDATEFMT)))
-
-                self.write(']}')
-                self.write('}')
+            if i == 0:
+                # Base snapshot for the delta chain
+                stmts.update(data.splitlines())
             else:
-                m = (',\n'
-                    '<' + base + '?key=' + url_escape(key) + '&datetime={0}>'
-                    '; rel="memento"'
-                    '; datetime="{1}"'
-                    '; type="application/n-quads"')
+                for line in data.splitlines():
+                    mode, stmt = line[0], line[2:]
+                    if mode == "A":
+                        stmts.add(stmt)
+                    else:
+                        stmts.discard(stmt)
 
-                self.set_header("Content-Type", "application/link-format")
+        self.write(join(stmts, "\n"))
 
-                self.write('<' + key + '>; rel="original"')
-                self.write(m.format(first.time.strftime(QSDATEFMT),
-                    first.time.strftime(RFC1123DATEFMT)))
+    def _timemap(self, username, reponame, key, **kwargs):
+        # Generate a timemap containing historic change information
+        # for the requested key. The timemap is in the default link-format
+        # or as JSON (http://mementoweb.org/guide/timemap-json/).
 
-                for cs in csit:
-                    self.write(m.format(cs.time.strftime(QSDATEFMT),
-                        cs.time.strftime(RFC1123DATEFMT)))
-        elif index:
-            # Generate an index of all URIs contained in the dataset at the
-            # provided point in time or in its current state.
+        try:
+            repo = (Repo
+                .select(Repo.id)
+                .join(User)
+                .where((User.name == username) & (Repo.name == reponame))
+                .naive()
+                .get())
+        except Repo.DoesNotExist:
+            raise HTTPError(404)
 
-            self.set_header("Vary", "accept-datetime")
-            self.set_header("Content-Type", "text/plain")
+        sha = shasum(key.encode("utf-8"))
 
-            page = int(self.get_query_argument("page", "1"))
+        csets = (CSet
+            .select(CSet.time)
+            .where((CSet.repo == repo) & (CSet.hkey == sha))
+            .order_by(CSet.time.desc())
+            .naive())
 
-            # Subquery for selecting max. time per hkey group
-            mx = (CSet
-                .select(CSet.hkey, fn.Max(CSet.time).alias("maxtime"))
-                .where((CSet.repo == repo) & (CSet.time <= ts))
-                .group_by(CSet.hkey)
-                .order_by(CSet.hkey)
-                .paginate(page, INDEX_PAGE_SIZE)
-                .alias("mx"))
+        # TODO: Paginate?
 
-            # Query for all the relevant csets (those with max. time values)
-            cs = (CSet
-                .select(CSet.hkey, CSet.time)
-                .join(mx, on=(
-                    (CSet.hkey == mx.c.hkey_id) &
-                    (CSet.time == mx.c.maxtime)))
-                .where((CSet.repo == repo) & (CSet.type != CSet.DELETE))
-                .alias("cs"))
+        csit = csets.iterator()
 
-            # Join with the hmap table to retrieve the plain key values
-            hm = (HMap
-                .select(HMap.val)
-                .join(cs, on=(HMap.sha == cs.c.hkey_id))
-                .naive())
+        try:
+            first = csit.next()
+        except StopIteration:
+            # Resource for given key does not exist.
+            raise HTTPError(404)
 
-            for h in hm.iterator():
-                self.write(h.val + "\n")
+        base = self.request.protocol + "://" + self.request.host + "/api"
+        urlpat = base + "/" + username + "/" + reponame + "/{0}/" + key
+
+        memurl = lambda key, dt: urlpat.format(dt.strftime(PCDATEFMT))
+
+        accept = self.request.headers.get("Accept", "")
+
+        if "application/json" in accept or "*/*" in accept:
+            self.set_header("Content-Type", "application/json")
+
+            self.write('{"original_uri":' + json_encode(key))
+            self.write(',"mementos":{"list":[')
+
+            elm = '{{"datetime":"{0}","uri":"{1}"}}'
+            mem = lambda dt: elm.format(dt.isoformat(), memurl(key, dt))
+
+            self.write(mem(first.time))
+
+            for cs in csit:
+                self.write(',' + mem(cs.time))
+
+            self.write(']}') # mementos.list
+            self.write('}')
         else:
-            raise HTTPError(400)
+            self.set_header("Content-Type", "application/link-format")
+
+            elm = (',\n<{0}>; rel="memento"; datetime="{1}"' +
+                '; type="application/n-quads"')
+            mem = lambda dt: elm.format(memurl(key, dt),
+                dt.strftime(RFC1123DATEFMT))
+
+            self.write('<' + key + '>; rel="original"')
+            self.write(mem(first.time))
+
+            for cs in csit:
+                self.write(mem(cs.time))
+
+    def _index(self, username, reponame, ts=None, **kwargs):
+        # Generate an index of all URIs contained in the dataset at the
+        # provided point in time or in its current state.
+
+        try:
+            repo = (Repo
+                .select(Repo.id)
+                .join(User)
+                .where((User.name == username) & (Repo.name == reponame))
+                .naive()
+                .get())
+        except Repo.DoesNotExist:
+            raise HTTPError(404)
+
+        if ts is None:
+            self.set_header("Vary", "accept-datetime")
+            ts = now()
+
+        self.set_header("Content-Type", "text/plain")
+
+        page = int(self.get_query_argument("page", "1"))
+
+        # Subquery for selecting max. time per hkey group
+        mx = (CSet
+            .select(CSet.hkey, fn.Max(CSet.time).alias("maxtime"))
+            .where((CSet.repo == repo) & (CSet.time <= ts))
+            .group_by(CSet.hkey)
+            .order_by(CSet.hkey)
+            .paginate(page, INDEX_PAGE_SIZE)
+            .alias("mx"))
+
+        # Query for all the relevant csets (those with max. time values)
+        cs = (CSet
+            .select(CSet.hkey, CSet.time)
+            .join(mx, on=(
+                (CSet.hkey == mx.c.hkey_id) &
+                (CSet.time == mx.c.maxtime)))
+            .where((CSet.repo == repo) & (CSet.type != CSet.DELETE))
+            .alias("cs"))
+
+        # Join with the hmap table to retrieve the plain key values
+        hm = (HMap
+            .select(HMap.val)
+            .join(cs, on=(HMap.sha == cs.c.hkey_id))
+            .naive())
+
+        for h in hm.iterator():
+            self.write(h.val + "\n")
+
+class MementoHandler(BaseHandler):
+    def get(self, username, reponame, datestr, key):
+        ts = date(datestr, PCDATEFMT)
+        self._memento(username, reponame, key, ts)
+
+class TimemapHandler(BaseHandler):
+    def get(self, username, reponame, key):
+        self._timemap(username, reponame, key)
+
+class ResourceHandler(BaseHandler):
+    def head(self, username, reponame, key):
+        raise NotImplementedError # TODO: ?
+
+    def get(self, username, reponame, key):
+        if "Accept-Datetime" in self.request.headers:
+            datestr = self.request.headers.get("Accept-Datetime")
+            ts = date(datestr, RFC1123DATEFMT)
+        else:
+            ts = None
+
+        self._memento(username, reponame, key, ts)
 
     @authenticated
-    def put(self, username, reponame):
+    def put(self, username, reponame, key):
         # Create a new revision of the resource specified by `key`.
 
         fmt = self.request.headers.get("Content-Type", "application/n-triples")
-        key = self.get_query_argument("key", None)
 
         if username != self.current_user.name:
             raise HTTPError(403)
@@ -439,11 +462,9 @@ class RepoHandler(BaseHandler):
                 len=len(patch))
 
     @authenticated
-    def delete(self, username, reponame):
+    def delete(self, username, reponame, key):
         # Check whether the key exists and if maybe the last change already is
         # a delete, else insert a `CSet.DELETE` entry without any blob data.
-
-        key = self.get_query_argument("key")
 
         if username != self.current_user.name:
             raise HTTPError(403)
@@ -489,3 +510,18 @@ class RepoHandler(BaseHandler):
 
         # Insert the new "delete" change.
         CSet.create(repo=repo, hkey=sha, time=ts, type=CSet.DELETE, len=0)
+
+class IndexHandler(BaseHandler):
+    def get(self, username, reponame):
+        if "Accept-Datetime" in self.request.headers:
+            datestr = self.request.headers.get("Accept-Datetime")
+            ts = date(datestr, RFC1123DATEFMT)
+        else:
+            ts = None
+
+        self._index(username, reponame, ts)
+
+class IndexMementoHandler(BaseHandler):
+    def get(self, username, reponame, datestr):
+        ts = date(datestr, PCDATEFMT)
+        self._index(username, reponame, ts)

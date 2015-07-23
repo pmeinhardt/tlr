@@ -90,23 +90,35 @@ class RepoHandler(BaseHandler):
                 .where((User.name == username) & (Repo.name == reponame))
                 .get())
             title = repo.user.name + "/" + repo.name
+            cs = (CSet.select(fn.distinct(CSet.hkey))
+                .where(CSet.repo == repo).limit(5).alias("cs"))
+            samples = (HMap.select(HMap.val)
+                .join(cs, on=(HMap.sha == cs.c.hkey_id)))
+            self.render("repo/show.html", title=title, repo=repo,
+                samples=list(samples))
+        except Repo.DoesNotExist:
+            raise HTTPError(404)
 
-            timemap = self.get_query_argument("timemap", "false") == "true"
-            datetime = self.get_query_argument("datetime", None)
-            key = self.get_query_argument("key", None)
+class TimemapHandler(BaseHandler):
+    def get(self, username, reponame, key):
+        try:
+            repo = (Repo.select().join(User).alias("user")
+                .where((User.name == username) & (Repo.name == reponame))
+                .get())
+            title = repo.user.name + "/" + repo.name + ": " + key
+            self.render("repo/history.html", title=title, repo=repo, key=key)
+        except Repo.DoesNotExist:
+            raise HTTPError(404)
 
-            if key and not timemap:
-                self.render("repo/memento.html", repo=repo, key=key,
-                    datetime=datetime)
-            elif key and timemap:
-                self.render("repo/history.html", repo=repo, key=key)
-            else:
-                cs = (CSet.select(fn.distinct(CSet.hkey))
-                    .where(CSet.repo == repo).limit(5).alias("cs"))
-                samples = (HMap.select(HMap.val)
-                    .join(cs, on=(HMap.sha == cs.c.hkey_id)))
-                self.render("repo/show.html", title=title, repo=repo,
-                    samples=list(samples))
+class MementoHandler(BaseHandler):
+    def get(self, username, reponame, datestr, key):
+        try:
+            repo = (Repo.select().join(User).alias("user")
+                .where((User.name == username) & (Repo.name == reponame))
+                .get())
+            title = repo.user.name + "/" + repo.name + ": " + key
+            self.render("repo/memento.html", title=title,
+                repo=repo, key=key, datestr=datestr)
         except Repo.DoesNotExist:
             raise HTTPError(404)
 

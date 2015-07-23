@@ -39,7 +39,7 @@
           </li>
           <li>
             You can push new versions of your tracked resources through straight-forward HTTP requests.
-            Specify the original URI of the resource in the <code>key</code> query parameter.
+            Specify the original URI of the resource by appending it to the repository URL.
             You can supply an optional <code>datetime</code> value to say when the resource was changed or else the current server time will be used as a default.
             <ul>
               <li>A <code>PUT</code> request with the resource RDF description in the body will create a new revision of the resource.</li>
@@ -48,7 +48,7 @@
             Acceptable <code>Content-Type</code> values are <code>application/rdf+xml</code>, <code>application/n-triples</code> and <code>text/turtle</code>.
           </li>
           <li>
-            An example of how to send requests from the command-line using <code>curl</code> is given below (<a href="http://explainshell.com/explain?cmd=curl+-X+PUT+-H+%22Authorization%3A+token+%24TOKEN%22+-H+%22Content-Type%3A+application%2Fn-triples%22+--data-binary+%40path%2Fto%2Fresource.nt+%22{{ url_escape(api_url + "?key=http://...&datetime=...") }}%22" target="_blank">explanation here</a>).<br>
+            An example of how to send requests from the command-line using <code>curl</code> is given below (<a href="http://explainshell.com/explain?cmd=curl+-X+PUT+-H+%22Authorization%3A+token+%24TOKEN%22+-H+%22Content-Type%3A+application%2Fn-triples%22+--data-binary+%40path%2Fto%2Fresource.nt+%22{{ url_escape(api_url + "/http://...?datetime=...") }}%22" target="_blank">explanation here</a>).<br>
           </li>
         </ol>
       </p>
@@ -63,11 +63,11 @@ curl -X PUT \
   -H "Authorization: token $TOKEN" \
   -H "Content-Type: application/n-triples" \
   --data-binary @path/to/resource.nt \
-  "{{ api_url }}?key=http://...&datetime=yyyy-MM-dd-HH:mm:ss"<br>
+  "{{ api_url }}/http://...?datetime=yyyy-MM-dd-HH:mm:ss"<br>
 # mark a resource as deleted
 curl -X DELETE \
   -H "Authorization: token $TOKEN" \
-  "{{ api_url }}?key=http://...&datetime=..."</code></pre>
+  "{{ api_url }}/http://...?datetime=..."</code></pre>
 
     <hr>
     {% end %}
@@ -77,14 +77,14 @@ curl -X DELETE \
         <h4>Reading resource states from {{ repo.name }}</h4>
         <p>Prior states of <em>linked data</em> resources tracked in this repository are accessible through a <a href="https://datatracker.ietf.org/doc/rfc7089/">Memento</a> API.</p>
         <p>
-          You can request a certain resource from this repository by specifying its URI in the <code>key</code> query parameter.
+          You can request a certain resource from this repository by appending its URI to the repository API URL.
           Specify the date and time for the resource state you are interested in by passing an <code>Accept-Datetime</code> HTTP header, for instance:
         </p>
-        <pre><code class="bash">curl -H "Accept-Datetime: Thu, 11 June 2015 09:45 GMT" "{{ api_url }}?key=http://..."</code></pre>
-        <p>In order to link to a certain resource state, you may also provide the datetime argument as a query parameter:</p>
-        <pre><code class="bash">curl "{{ api_url }}?key=http://...&datetime=2015-06-11-09:45:00"</code></pre>
+        <pre><code class="bash">curl -H "Accept-Datetime: Thu, 11 June 2015 09:45 GMT" "{{ api_url }}/http://..."</code></pre>
+        <p>In order to link to a certain resource state, you may also provide the datetime argument as a path component:</p>
+        <pre><code class="bash">curl "{{ api_url }}/20150611094500/http://..."</code></pre>
         <p>To find out when a resource was changed, query for the timemap:</p>
-        <pre><code class="bash">curl "{{ api_url }}?key=http://...&timemap=true"</code></pre>
+        <pre><code class="bash">curl "{{ api_url }}/history/http://..."</code></pre>
         {% if len(samples) > 0 %}
         <p>You can find links to a small sample of resources from this repository below:</p>
         {% else %}
@@ -95,7 +95,7 @@ curl -X DELETE \
       {% if len(samples) > 0 %}
       <ul class="list-group">
         {% for s in samples %}
-        <li class="list-group-item"><a href="{{ base_url + "?key=" + s.val + "&timemap=true" }}">{{ s.val }}</a></li>
+        <li class="list-group-item"><a href="{{ base_url + "/history/" + s.val }}">{{ s.val }}</a></li>
         {% end %}
       </ul>
       {% end %}
