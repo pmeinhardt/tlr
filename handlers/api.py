@@ -148,9 +148,11 @@ class BaseHandler(RequestHandler):
             raise HTTPError(404)
 
         timegate_url = (self.request.protocol + "://" + self.request.host +
-            self.reverse_url("api:resource", username, reponame, key))
+            "/api/" + username + "/" + reponame + "/" + key)
+            # self.reverse_url("api:resource", username, reponame, key))
         timemap_url = (self.request.protocol + "://" + self.request.host +
-            self.reverse_url("api:timemap", username, reponame, key))
+            "/api/" + username + "/" + reponame + "/history/" + key)
+            # self.reverse_url("api:timemap", username, reponame, key))
 
         self.set_header("Link",
             '<%s>; rel="original"'
